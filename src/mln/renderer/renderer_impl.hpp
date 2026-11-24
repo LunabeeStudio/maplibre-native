@@ -66,8 +66,8 @@ private:
     // pixel ratio, falls sub-texel in the lower-resolution target. Lower drapeQualityFactor
     // back to 1 to save GPU memory on constrained devices (each step is 4x memory/target).
     static constexpr uint32_t drapeTileSize = 512;
-    static constexpr uint32_t drapeQualityFactor = 2;
-    TexturePool texturePool{drapeTileSize * drapeQualityFactor};
+    static constexpr uint32_t drapeTargetSize = 768;
+    TexturePool texturePool{drapeTargetSize};
 
     gfx::RendererBackend& backend;
 
