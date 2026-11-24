@@ -141,6 +141,7 @@ TextureID Texture2DPool::allocateGLMemory(const Texture2DDesc& desc) {
     MLN_TRACE_FUNC();
 
     // Create handle
+    glDiscardPendingErrors();
     TextureID id = 0;
     MBGL_CHECK_ERROR(glGenTextures(1, &id));
     assert(id != 0);
