@@ -283,6 +283,8 @@ MLN_EXPORT
  */
 @property (nonatomic, strong) MLNLight *light;
 
+- (void)setTerrainWithSourceIdentifier:(nullable NSString *)sourceIdentifier exaggeration:(CGFloat)exaggeration;
+
 // MARK: Localizing Map Content
 
 /**

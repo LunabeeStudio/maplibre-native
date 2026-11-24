@@ -1,5 +1,7 @@
 #import "MLNStyle_Private.h"
 
+#include <mln/style/terrain.hpp>
+
 #import "MLNBackgroundStyleLayer.h"
 #import "MLNCircleStyleLayer.h"
 #import "MLNColorReliefStyleLayer.h"
@@ -562,6 +564,15 @@ const MLNExceptionName MLNRedundantSourceIdentifierException =
   std::unique_ptr<mln::style::Light> mbglLight =
       std::make_unique<mln::style::Light>([light mbglLight]);
   self.rawStyle->setLight(std::move(mbglLight));
+}
+
+- (void)setTerrainWithSourceIdentifier:(NSString *)sourceIdentifier exaggeration:(CGFloat)exaggeration {
+  if (!sourceIdentifier) {
+    self.rawStyle->setTerrain(nullptr);
+    return;
+  }
+  self.rawStyle->setTerrain(
+      std::make_unique<mln::style::Terrain>(sourceIdentifier.UTF8String, static_cast<float>(exaggeration)));
 }
 
 - (MLNLight *)light {
