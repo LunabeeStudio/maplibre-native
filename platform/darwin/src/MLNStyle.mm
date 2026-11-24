@@ -587,6 +587,15 @@ const MLNExceptionName MLNRedundantSourceIdentifierException =
   self.rawStyle->setLight(std::move(mbglLight));
 }
 
+- (void)setTerrainWithSourceIdentifier:(NSString *)sourceIdentifier exaggeration:(CGFloat)exaggeration {
+  if (!sourceIdentifier) {
+    self.rawStyle->setTerrain(nullptr);
+    return;
+  }
+  self.rawStyle->setTerrain(
+      std::make_unique<mln::style::Terrain>(sourceIdentifier.UTF8String, static_cast<float>(exaggeration)));
+}
+
 - (MLNLight *)light {
   auto mbglLight = self.rawStyle->getLight();
   MLNLight *light = [[MLNLight alloc] initWithMBGLLight:mbglLight];
