@@ -126,7 +126,7 @@ public class MapLibreConstants {
   /**
    * Factor to calculate tilt change based on pixel change during shove gesture.
    */
-  public static final float SHOVE_PIXEL_CHANGE_FACTOR = 0.1f;
+  public static final float SHOVE_PIXEL_CHANGE_FACTOR = 0.2f;
 
   /**
    * The currently supported minimum zoom level.
@@ -158,7 +158,7 @@ public class MapLibreConstants {
   /**
    * The currently supported maximum tilt value.
    */
-  public static final double MAXIMUM_TILT = 60;
+  public static final double MAXIMUM_TILT = 85;
 
   /**
    * The currently supported minimum tilt value.
