@@ -112,7 +112,7 @@ void RenderCustomLayer::update([[maybe_unused]] gfx::ShaderRegistry& shaders,
     // create layer group
     if (!layerGroup) {
         if (auto layerGroup_ = context.createLayerGroup(
-                layerIndex, /*initialCapacity=*/1, getID(), true)) { // TODO: make render to terrain optional?
+                layerIndex, /*initialCapacity=*/1, getID(), false)) {
             setLayerGroup(std::move(layerGroup_), changes);
         }
     }
