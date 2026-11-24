@@ -289,6 +289,21 @@ void SymbolLayer::setSymbolAvoidEdges(const PropertyValue<bool>& value) {
     baseImpl = std::move(impl_);
     observer->onLayerChanged(*this);
 }
+PropertyValue<bool> SymbolLayer::getDefaultSymbolIgnoreTerrainOcclusion() {
+    return SymbolIgnoreTerrainOcclusion::defaultValue();
+}
+
+const PropertyValue<bool>& SymbolLayer::getSymbolIgnoreTerrainOcclusion() const {
+    return impl().layout.get<SymbolIgnoreTerrainOcclusion>();
+}
+
+void SymbolLayer::setSymbolIgnoreTerrainOcclusion(const PropertyValue<bool>& value) {
+    if (value == getSymbolIgnoreTerrainOcclusion()) return;
+    auto impl_ = mutableImpl();
+    impl_->layout.get<SymbolIgnoreTerrainOcclusion>() = value;
+    baseImpl = std::move(impl_);
+    observer->onLayerChanged(*this);
+}
 PropertyValue<SymbolPlacementType> SymbolLayer::getDefaultSymbolPlacement() {
     return SymbolPlacement::defaultValue();
 }
@@ -1154,6 +1169,7 @@ enum class Property : uint8_t {
     IconTextFit,
     IconTextFitPadding,
     SymbolAvoidEdges,
+    SymbolIgnoreTerrainOcclusion,
     SymbolPlacement,
     SymbolScreenSpace,
     SymbolSortKey,
@@ -1233,6 +1249,7 @@ constexpr const auto layerProperties = mapbox::eternal::hash_map<mapbox::eternal
      {"icon-text-fit", toUint8(Property::IconTextFit)},
      {"icon-text-fit-padding", toUint8(Property::IconTextFitPadding)},
      {"symbol-avoid-edges", toUint8(Property::SymbolAvoidEdges)},
+     {"symbol-ignore-terrain-occlusion", toUint8(Property::SymbolIgnoreTerrainOcclusion)},
      {"symbol-placement", toUint8(Property::SymbolPlacement)},
      {"symbol-screen-space", toUint8(Property::SymbolScreenSpace)},
      {"symbol-sort-key", toUint8(Property::SymbolSortKey)},
@@ -1350,6 +1367,8 @@ StyleProperty getLayerProperty(const SymbolLayer& layer, Property property) {
             return makeStyleProperty(layer.getIconTextFitPadding());
         case Property::SymbolAvoidEdges:
             return makeStyleProperty(layer.getSymbolAvoidEdges());
+        case Property::SymbolIgnoreTerrainOcclusion:
+            return makeStyleProperty(layer.getSymbolIgnoreTerrainOcclusion());
         case Property::SymbolPlacement:
             return makeStyleProperty(layer.getSymbolPlacement());
         case Property::SymbolScreenSpace:
@@ -1583,9 +1602,10 @@ std::optional<Error> SymbolLayer::setPropertyInternal(const std::string& name, c
     }
     if (property == Property::IconAllowOverlap || property == Property::IconIgnorePlacement ||
         property == Property::IconKeepUpright || property == Property::IconOptional ||
-        property == Property::SymbolAvoidEdges || property == Property::SymbolScreenSpace ||
-        property == Property::TextAllowOverlap || property == Property::TextIgnorePlacement ||
-        property == Property::TextKeepUpright || property == Property::TextOptional) {
+        property == Property::SymbolAvoidEdges || property == Property::SymbolIgnoreTerrainOcclusion ||
+        property == Property::SymbolScreenSpace || property == Property::TextAllowOverlap ||
+        property == Property::TextIgnorePlacement || property == Property::TextKeepUpright ||
+        property == Property::TextOptional) {
         Error error;
         const auto& typedValue = convert<PropertyValue<bool>>(value, error, false, false);
         if (!typedValue) {
@@ -1614,6 +1634,11 @@ std::optional<Error> SymbolLayer::setPropertyInternal(const std::string& name, c
 
         if (property == Property::SymbolAvoidEdges) {
             setSymbolAvoidEdges(*typedValue);
+            return std::nullopt;
+        }
+
+        if (property == Property::SymbolIgnoreTerrainOcclusion) {
+            setSymbolIgnoreTerrainOcclusion(*typedValue);
             return std::nullopt;
         }
 

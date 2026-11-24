@@ -85,6 +85,10 @@ public:
     const PropertyValue<bool>& getSymbolAvoidEdges() const;
     void setSymbolAvoidEdges(const PropertyValue<bool>&);
 
+    static PropertyValue<bool> getDefaultSymbolIgnoreTerrainOcclusion();
+    const PropertyValue<bool>& getSymbolIgnoreTerrainOcclusion() const;
+    void setSymbolIgnoreTerrainOcclusion(const PropertyValue<bool>&);
+
     static PropertyValue<SymbolPlacementType> getDefaultSymbolPlacement();
     const PropertyValue<SymbolPlacementType>& getSymbolPlacement() const;
     void setSymbolPlacement(const PropertyValue<SymbolPlacementType>&);

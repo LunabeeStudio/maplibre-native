@@ -91,6 +91,11 @@ struct SymbolAvoidEdges : LayoutProperty<bool> {
     static bool defaultValue() { return false; }
 };
 
+struct SymbolIgnoreTerrainOcclusion : LayoutProperty<bool> {
+    static constexpr const char *name() { return "symbol-ignore-terrain-occlusion"; }
+    static bool defaultValue() { return false; }
+};
+
 struct SymbolPlacement : LayoutProperty<SymbolPlacementType> {
     static constexpr const char *name() { return "symbol-placement"; }
     static SymbolPlacementType defaultValue() { return SymbolPlacementType::Point; }
@@ -306,6 +311,7 @@ class SymbolLayoutProperties : public Properties<
     IconTextFit,
     IconTextFitPadding,
     SymbolAvoidEdges,
+    SymbolIgnoreTerrainOcclusion,
     SymbolPlacement,
     SymbolScreenSpace,
     SymbolSortKey,
