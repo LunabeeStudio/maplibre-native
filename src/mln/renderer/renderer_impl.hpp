@@ -74,8 +74,8 @@ private:
     // Only the tiles nearest the camera get that full size (RenderTerrain::fullSizeDrapeTilesOf);
     // every other tile's target is drapeTileSize, a quarter of the memory.
     static constexpr uint32_t drapeTileSize = 512;
-    static constexpr uint32_t drapeQualityFactor = 2;
-    TexturePool texturePool{drapeTileSize * drapeQualityFactor, drapeTileSize};
+    static constexpr uint32_t drapeTargetSize = 768;
+    TexturePool texturePool{drapeTargetSize, drapeTileSize};
     /// This frame's layer revisions (see PaintParameters::drapeLayerRevisions).
     std::unordered_map<std::string, std::uintptr_t> layerIdentities;
 
