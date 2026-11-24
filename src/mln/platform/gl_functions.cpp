@@ -15,5 +15,15 @@ void glCheckError(const char* cmd, const char* file, int line) {
 }
 #endif
 
+void glDiscardPendingErrors() {
+    static int reported = 0;
+    while (GLenum err = glGetError()) {
+        if (reported < 20) {
+            reported++;
+            Log::Warning(Event::GraphicsBackend, "Discarding pending GL error " + std::to_string(err) + " before an allocation");
+        }
+    }
+}
+
 } // namespace platform
 } // namespace mln
