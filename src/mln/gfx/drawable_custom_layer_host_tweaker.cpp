@@ -23,7 +23,7 @@ void DrawableCustomLayerHostTweaker::execute([[maybe_unused]] gfx::Drawable& dra
                                              mln::PaintParameters& paintParameters) {
     // custom drawing
     auto& context = paintParameters.context;
-    context.resetState(paintParameters.depthModeForSublayer(0, gfx::DepthMaskType::ReadOnly),
+    context.resetState(paintParameters.depthModeFor3D(),
                        paintParameters.colorModeForRenderPass());
 
 #if MLN_RENDER_BACKEND_METAL
