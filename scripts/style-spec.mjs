@@ -198,4 +198,11 @@ modifiedReferenceSpec["layout_symbol"]["symbol-screen-space"] = {
     "doc": "Internal use only"
 };
 
+modifiedReferenceSpec["layout_symbol"]["symbol-ignore-terrain-occlusion"] = {
+    "type": "boolean",
+    "default": false,
+    "property-type": "data-constant",
+    "doc": "If true, the symbols stay visible behind 3D terrain instead of being hidden by it."
+};
+
 export default modifiedReferenceSpec;

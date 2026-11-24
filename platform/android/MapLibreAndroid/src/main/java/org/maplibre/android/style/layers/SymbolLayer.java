@@ -662,6 +662,18 @@ public class SymbolLayer extends Layer {
   }
 
   /**
+   * Get the SymbolIgnoreTerrainOcclusion property
+   *
+   * @return property wrapper value around Boolean
+   */
+  @NonNull
+  @SuppressWarnings("unchecked")
+  public PropertyValue<Boolean> getSymbolIgnoreTerrainOcclusion() {
+    checkThread();
+    return (PropertyValue<Boolean>) new PropertyValue("symbol-ignore-terrain-occlusion", nativeGetSymbolIgnoreTerrainOcclusion());
+  }
+
+  /**
    * Get the IconOpacity property
    *
    * @return property wrapper value around Float
@@ -1320,6 +1332,10 @@ public class SymbolLayer extends Layer {
   @NonNull
   @Keep
   private native Object nativeGetSymbolScreenSpace();
+
+  @NonNull
+  @Keep
+  private native Object nativeGetSymbolIgnoreTerrainOcclusion();
 
   @NonNull
   @Keep

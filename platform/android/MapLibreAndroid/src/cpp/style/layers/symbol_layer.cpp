@@ -429,6 +429,15 @@ jni::Local<jni::Object<>> SymbolLayer::getSymbolScreenSpace(jni::JNIEnv& env) {
     return std::move(*convert<jni::Local<jni::Object<>>>(env, toSymbolLayer(*layer).getSymbolScreenSpace()));
 }
 
+jni::Local<jni::Object<>> SymbolLayer::getSymbolIgnoreTerrainOcclusion(jni::JNIEnv& env) {
+    using namespace mln::android::conversion;
+    auto layer = layerPtr.get();
+    if (!layer) {
+        return std::move(*convert<jni::Local<jni::Object<>>>(env, style::SymbolLayer::getDefaultSymbolIgnoreTerrainOcclusion()));
+    }
+    return std::move(*convert<jni::Local<jni::Object<>>>(env, toSymbolLayer(*layer).getSymbolIgnoreTerrainOcclusion()));
+}
+
 jni::Local<jni::Object<>> SymbolLayer::getIconOpacity(jni::JNIEnv& env) {
     using namespace mln::android::conversion;
     auto layer = layerPtr.get();
@@ -890,6 +899,7 @@ void SymbolJavaLayerPeerFactory::registerNative(jni::JNIEnv& env) {
         METHOD(&SymbolLayer::getTextIgnorePlacement, "nativeGetTextIgnorePlacement"),
         METHOD(&SymbolLayer::getTextOptional, "nativeGetTextOptional"),
         METHOD(&SymbolLayer::getSymbolScreenSpace, "nativeGetSymbolScreenSpace"),
+        METHOD(&SymbolLayer::getSymbolIgnoreTerrainOcclusion, "nativeGetSymbolIgnoreTerrainOcclusion"),
         METHOD(&SymbolLayer::getIconOpacityTransition, "nativeGetIconOpacityTransition"),
         METHOD(&SymbolLayer::setIconOpacityTransition, "nativeSetIconOpacityTransition"),
         METHOD(&SymbolLayer::getIconOpacity, "nativeGetIconOpacity"),

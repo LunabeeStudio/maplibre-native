@@ -100,6 +100,10 @@ void SymbolLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParamete
     const auto screenSpaceProp = symbolLayerProperties.layerImpl().layout.get<SymbolScreenSpace>();
     const auto isScreenSpace = screenSpaceProp.isConstant() ? screenSpaceProp.asConstant()
                                                             : SymbolScreenSpace::defaultValue();
+    const auto ignoreOcclusionProp = symbolLayerProperties.layerImpl().layout.get<SymbolIgnoreTerrainOcclusion>();
+    const auto ignoresTerrainOcclusion = ignoreOcclusionProp.isConstant()
+                                             ? ignoreOcclusionProp.asConstant()
+                                             : SymbolIgnoreTerrainOcclusion::defaultValue();
 
     visitLayerGroupDrawables(layerGroup, [&](gfx::Drawable& drawable) {
         if (!drawable.getTileID() || !drawable.getData()) {
@@ -225,7 +229,7 @@ void SymbolLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintParamete
             .dem_dim = terrainData ? terrainData->demDim : 0.0f,
             .dem_exaggeration = parameters.terrain ? parameters.terrain->getExaggeration() : 0.0f,
             .dem_enabled = terrainData ? 1.0f : 0.0f,
-            .depth_enabled = terrainEnabled ? 1.0f : 0.0f,
+            .depth_enabled = (terrainEnabled && !ignoresTerrainOcclusion) ? 1.0f : 0.0f,
         };
 
 #if MLN_UBO_CONSOLIDATION

@@ -2748,6 +2748,26 @@ The unit is in density-independent pixels only for SDF sprites that were created
   }
 
   /**
+   * If true, the symbols stay visible behind 3D terrain instead of being hidden by it.
+   *
+   * @param value a Boolean value
+   * @return property wrapper around Boolean
+   */
+  public static PropertyValue<Boolean> symbolIgnoreTerrainOcclusion(Boolean value) {
+    return new LayoutPropertyValue<>("symbol-ignore-terrain-occlusion", value);
+  }
+
+  /**
+   * If true, the symbols stay visible behind 3D terrain instead of being hidden by it.
+   *
+   * @param value a Boolean value
+   * @return property wrapper around Boolean
+   */
+  public static PropertyValue<Expression> symbolIgnoreTerrainOcclusion(Expression value) {
+    return new LayoutPropertyValue<>("symbol-ignore-terrain-occlusion", value);
+  }
+
+  /**
    * Sorts features in ascending order based on this value. Features with a higher sort key will appear above features with a lower sort key.
    *
    * @param value a Float value
