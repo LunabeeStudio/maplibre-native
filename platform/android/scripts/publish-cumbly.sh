@@ -5,7 +5,7 @@
 #   scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory, maplibre-native-local
 #
 # Options:
-#   --flavor opengl|vulkan   renderer flavor (default: opengl)
+#   --flavor opengl|vulkan   renderer flavor (default: vulkan)
 #   --abis "<list>"          space-separated ABIs, e.g. "arm64-v8a x86_64", or "all" (default: all)
 #
 # The version is `<platform/android/VERSION>-cumbly-<HEAD commit time, Unix seconds>-<short HEAD sha>`,
@@ -25,7 +25,7 @@ usage() {
 }
 
 target=""
-flavor="opengl"
+flavor="vulkan"
 abis="all"
 while [[ $# -gt 0 ]]; do
     case "$1" in
