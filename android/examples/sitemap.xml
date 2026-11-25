@@ -5,6 +5,10 @@
          <lastmod>2026-11-25</lastmod>
     </url>
     <url>
+         <loc>https://www.maplibre.org/maplibre-native/android/examples/artifacts/</loc>
+         <lastmod>2026-11-25</lastmod>
+    </url>
+    <url>
          <loc>https://www.maplibre.org/maplibre-native/android/examples/configuration/</loc>
          <lastmod>2026-11-25</lastmod>
     </url>
@@ -18,6 +22,10 @@
     </url>
     <url>
          <loc>https://www.maplibre.org/maplibre-native/android/examples/location-component/</loc>
+         <lastmod>2026-11-25</lastmod>
+    </url>
+    <url>
+         <loc>https://www.maplibre.org/maplibre-native/android/examples/plugin-api/</loc>
          <lastmod>2026-11-25</lastmod>
     </url>
     <url>
@@ -70,10 +78,6 @@
     </url>
     <url>
          <loc>https://www.maplibre.org/maplibre-native/android/examples/data/PMTiles/</loc>
-         <lastmod>2026-11-25</lastmod>
-    </url>
-    <url>
-         <loc>https://www.maplibre.org/maplibre-native/android/examples/data/rendering-engine/</loc>
          <lastmod>2026-11-25</lastmod>
     </url>
     <url>
