@@ -65,6 +65,8 @@ public:
 
 protected:
     void createDescriptorPool(DescriptorPoolGrowable& growablePool);
+    void renewIfBoundThisFrame();
+    void retire(std::vector<vk::DescriptorSet>&& sets, int32_t poolIndex);
 
 protected:
     Context& context;
@@ -73,6 +75,7 @@ protected:
     std::vector<bool> dirty;
     std::vector<vk::DescriptorSet> descriptorSets;
     int32_t descriptorPoolIndex{-1};
+    uint64_t boundFrameSerial{0};
 };
 
 class UniformDescriptorSet : public DescriptorSet {
