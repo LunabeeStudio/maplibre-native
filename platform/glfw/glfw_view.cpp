@@ -43,6 +43,13 @@
 #pragma warning(pop)
 #endif
 
+#if MLN_RENDER_BACKEND_VULKAN
+#include <mln/style/layers/custom_layer.hpp>
+
+#include "sky_layer_data.hpp"
+#include "track_layer_data.hpp"
+#endif
+
 #if !defined(__APPLE__)
 #define GLFW_INCLUDE_ES3
 #endif
@@ -326,6 +333,9 @@ GLFWView::GLFWView(bool fullscreen_,
     printf("- Press `X` to reset the transform\n");
     printf("- Press `N` to reset north\n");
     printf("- Press `R` to enable the route demo\n");
+#if MLN_RENDER_BACKEND_VULKAN
+    printf("- Press `V` to toggle the Android SkyLayer and TrackLayer on the New York route\n");
+#endif
     printf("- Press `E` to insert an example building extrusion layer\n");
     printf("- Press `O` to toggle online connectivity\n");
     printf("- Press `Z` to cycle through north orientations\n");
@@ -574,6 +584,11 @@ void GLFWView::onKey(GLFWwindow *window, int key, int /*scancode*/, int action, 
             case GLFW_KEY_T:
                 view->toggleCustomSource();
                 break;
+#if MLN_RENDER_BACKEND_VULKAN
+            case GLFW_KEY_V:
+                view->toggleSkyAndTrackLayers();
+                break;
+#endif
             case GLFW_KEY_F: {
                 using namespace mln;
                 using namespace mln::style;
@@ -1440,6 +1455,62 @@ void GLFWView::toggleLocationIndicatorLayer() {
     mln::Log::Warning(mln::Event::General, "Location indicator is disabled");
 #endif // ENABLE_LOCATION_INDICATOR
 }
+
+#if MLN_RENDER_BACKEND_VULKAN
+void GLFWView::toggleSkyAndTrackLayers() {
+    static const std::string skyId = "android-sky";
+    static const std::string trackId = "android-track";
+    auto &style = map->getStyle();
+
+    if (style.getLayer(skyId)) {
+        style.removeLayer(trackId);
+        style.removeLayer(skyId);
+        map->setBounds(mln::BoundOptions().withMaxPitch(60));
+        return;
+    }
+
+    const auto rgb = [](uint32_t color) {
+        return std::array<float, 3>{static_cast<float>((color >> 16) & 0xFF) / 255.0f,
+                                    static_cast<float>((color >> 8) & 0xFF) / 255.0f,
+                                    static_cast<float>(color & 0xFF) / 255.0f};
+    };
+    // Below every style layer: the map covers it, so it only shows above the horizon.
+    const auto layers = style.getLayers();
+    const std::optional<std::string> bottom = layers.empty() ? std::nullopt
+                                                             : std::optional<std::string>(layers.front()->getID());
+    style.addLayer(std::make_unique<mln::style::CustomLayer>(
+                       skyId, cumbly_sky::createHost({rgb(0xDCE6F0), rgb(0x9CC3E6), rgb(0x3A6EA5), 8.0f, 45.0f})),
+                   bottom);
+
+    static const mapbox::geojson::geojson route{mapbox::geojson::parse(mln::platform::glfw::route)};
+    const auto &line = route.get<mapbox::geometry::geometry<double>>().get<mapbox::geometry::line_string<double>>();
+    std::vector<double> lonLatAltitudes;
+    std::vector<uint32_t> colors;
+    lonLatAltitudes.reserve(line.size() * 3);
+    colors.reserve(line.size());
+    for (size_t i = 0; i < line.size(); ++i) {
+        // Green to red along the route, like a speed or slope colouring.
+        const double t = line.size() > 1 ? static_cast<double>(i) / static_cast<double>(line.size() - 1) : 0.0;
+        lonLatAltitudes.insert(lonLatAltitudes.end(), {line[i].x, line[i].y, 0.0});
+        colors.push_back(0xFF000000u | (static_cast<uint32_t>(255.0 * t) << 16) |
+                         (static_cast<uint32_t>(255.0 * (1.0 - t)) << 8) | 0x30u);
+    }
+    auto track = std::make_shared<cumbly_track::TrackData>();
+    track->halfWidth = 3.0f;
+    cumbly_track::setTrack(*track, lonLatAltitudes.data(), colors.data(), line.size());
+    const auto &middle = line[line.size() / 2];
+    cumbly_track::setCursor(*track, middle.x, middle.y, 0.0);
+    style.addLayer(std::make_unique<mln::style::CustomLayer>(trackId, cumbly_track::createHost(std::move(track))));
+
+    // The sky needs a pitch past the default 60 degree limit to reach the horizon.
+    map->setBounds(mln::BoundOptions().withMaxPitch(85));
+    map->jumpTo(mln::CameraOptions()
+                    .withCenter(mln::LatLng{middle.y, middle.x})
+                    .withZoom(15.0)
+                    .withBearing(30.0)
+                    .withPitch(80.0));
+}
+#endif
 
 void GLFWView::onWillStartRenderingFrame() {
     MLN_TRACE_FUNC();
