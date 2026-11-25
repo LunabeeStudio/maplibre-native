@@ -3,6 +3,7 @@
 #include <mln/style/layers/custom_layer_host.hpp>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -34,6 +35,14 @@ struct TrackData {
 };
 
 constexpr int kFloatsPerVertex = 11;
+
+std::array<float, 4> unpackColor(uint32_t argb);
+
+// Replaces the track with `count` points: `lonLatAltitudes` holds longitude, latitude and altitude for each one, and
+// `argb` its colour.
+void setTrack(TrackData& data, const double* lonLatAltitudes, const uint32_t* argb, size_t count);
+
+void setCursor(TrackData& data, double longitude, double latitude, double altitude);
 
 std::unique_ptr<mln::style::CustomLayerHost> createHost(std::shared_ptr<TrackData> data);
 

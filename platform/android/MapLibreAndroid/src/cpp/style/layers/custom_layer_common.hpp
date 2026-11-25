@@ -1,12 +1,9 @@
 #pragma once
 
-#include <jni.h>
-
 #include <mln/style/layers/custom_layer_render_parameters.hpp>
 
 #include <array>
 #include <cmath>
-#include <memory>
 
 namespace cumbly_common {
 
@@ -19,11 +16,6 @@ inline double mercatorX(double longitude) {
 inline double mercatorY(double latitude) {
     const double radians = latitude * M_PI / 180.0;
     return (1.0 - std::log(std::tan(radians) + 1.0 / std::cos(radians)) / M_PI) / 2.0;
-}
-
-template <typename State>
-std::shared_ptr<State>& handle(jlong state) {
-    return *reinterpret_cast<std::shared_ptr<State>*>(state);
 }
 
 inline std::array<float, 16> modelViewProjection(const mln::style::CustomLayerRenderParameters& parameters,

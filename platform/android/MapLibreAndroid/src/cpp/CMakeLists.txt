@@ -225,6 +225,7 @@ if(MLN_WITH_VULKAN)
     target_sources(
         maplibre PRIVATE
             ${PROJECT_SOURCE_DIR}/style/layers/track_layer.cpp
+            ${PROJECT_SOURCE_DIR}/style/layers/track_layer_data.cpp
             ${PROJECT_SOURCE_DIR}/style/layers/track_layer_vulkan.cpp
             ${PROJECT_SOURCE_DIR}/style/layers/sky_layer.cpp
             ${PROJECT_SOURCE_DIR}/style/layers/sky_layer_vulkan.cpp
