@@ -23,19 +23,22 @@ here and pin the printed version in Cumbly's `gradle/libs.versions.toml` (`mapli
 
 ```bash
 cd platform/android
-scripts/publish-cumbly.sh local    # into ~/.m2/repository, to try a change in Cumbly
-scripts/publish-cumbly.sh github   # into GitHub Packages of LunabeeStudio/maplibre-native, for teammates and CI
+scripts/publish-cumbly.sh local         # into ~/.m2/repository, to try a change in Cumbly
+scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (libs-release-local), for teammates and CI
 ```
 
 - Artifact `org.maplibre.gl:android-sdk-opengl` (`--flavor vulkan` gives `android-sdk-vulkan`), version
   `<platform/android/VERSION>-cumbly-<short HEAD sha>`, e.g. `13.6.1-cumbly-7843af5`. A local build of a dirty tree
-  gets `-dirty`; `github` refuses one. `--abis "arm64-v8a x86_64"` (space-separated) narrows a local build.
+  gets `-dirty`; `artifactory` refuses one. `--abis "arm64-v8a x86_64"` (space-separated) narrows a local build.
 - The version comes from `-Pmaplibre.versionName` (read in `buildSrc/.../maplibre.artifact-settings.gradle.kts`);
   publishing goes through the existing `publicationRepositoryUrl` path of `maplibre.gradle-publish.gradle.kts`,
   which skips signing.
-- `github` needs a token with `write:packages` (`GITHUB_ACTOR` + `GITHUB_TOKEN`, or the `gh` login:
-  `gh auth refresh -s write:packages`). GitHub Packages refuses to overwrite a version, so publish each commit once.
-- Cumbly's `settings.gradle.kts` resolves that one module from Maven Local first, then GitHub Packages.
+- `artifactory` deploys to `https://artifactory.lunabee.studio/artifactory/libs-release-local` with
+  `artifactory_deployer_release_username` / `artifactory_deployer_release_api_key` from `~/.gradle/gradle.properties`
+  (or `ARTIFACTORY_DEPLOYER_USERNAME` / `ARTIFACTORY_DEPLOYER_API_KEY`). It refuses a version already there, so
+  publish each commit once.
+- Cumbly's `settings.gradle.kts` resolves that one module from Maven Local first, then Artifactory, with the
+  consumer credentials every Lunabee machine and TeamCity already have.
 - Requires NDK `28.2.13676358` and SDK CMake 3.x (`sdkmanager "ndk;28.2.13676358" "cmake;3.31.6"`).
 
 **iOS: still built by Cumbly.** Its CLI (`./cumbly ios maplibre`) checks out upstream at `2ef164d`, applies the shared
