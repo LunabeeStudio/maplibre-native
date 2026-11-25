@@ -56,6 +56,12 @@ dokka {
     }
 }
 
+// `-Pmaplibre.vulkanValidation=true` turns on the Vulkan validation layer, debug labels and object names.
+// VUIDs are logged to logcat under the `Mbgl` tag. Debug builds only: the layer .so is packaged for debug.
+val vulkanValidationArgument =
+    "-DMLN_VULKAN_VALIDATION=" +
+        if (providers.gradleProperty("maplibre.vulkanValidation").orNull == "true") "ON" else "OFF"
+
 android {
     ndkVersion = Versions.ndkVersion
 
@@ -87,6 +93,7 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments("-DMLN_WITH_VULKAN=ON")
+                    arguments(vulkanValidationArgument)
                 }
             }
         }
@@ -114,6 +121,7 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments("-DMLN_ANDROID_MULTI_BACKEND=ON")
+                    arguments(vulkanValidationArgument)
                     targets("maplibre-opengl", "maplibre-vulkan")
                 }
             }

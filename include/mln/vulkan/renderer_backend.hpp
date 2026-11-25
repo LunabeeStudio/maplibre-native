@@ -19,7 +19,8 @@
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
 #include "vk_mem_alloc.h"
 
-#if !defined(NDEBUG) && !defined(__ANDROID__)
+// On by default in desktop debug builds. MLN_VULKAN_VALIDATION (CMake option) forces it on anywhere, Android included.
+#if defined(MLN_VULKAN_VALIDATION) || (!defined(NDEBUG) && !defined(__ANDROID__))
 #define ENABLE_VULKAN_VALIDATION
 // #define ENABLE_VULKAN_VALIDATION_FEATURES
 // #define ENABLE_VMA_DEBUG

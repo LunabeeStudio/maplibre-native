@@ -63,6 +63,23 @@ Vulkan port:
   activities. Read it before touching terrain code. When in doubt, match maplibre-gl-js behaviour.
 - `TERRAIN_INSTANCING_EXPERIMENT.md` holds design notes for instancing the terrain draws (experiment, not wired up).
 
+## Vulkan work
+
+Delegate Vulkan backend work to the `vulkan-engineer` agent (`.claude/agents/`): it carries the backend map and the
+conventions that differ from GL. Three skills in `.claude/skills/` give it evidence instead of recall:
+
+- `vulkan-spec-lookup`: `scripts/vk-lookup.py <name-or-VUID>` reads the vendored registry. The backend is Vulkan
+  **1.0**; the script flags anything newer.
+- `vulkan-validate`: build with the validation layer and read VUIDs from the device. Validation is off by default
+  on Android; `-Pmaplibre.vulkanValidation=true` (CMake `-DMLN_VULKAN_VALIDATION=ON`) turns it on.
+- `vulkan-capture`: screenshots, GFXReconstruct traces and call logs for a frame that is wrong while validation is
+  quiet.
+
+`scripts/vulkan-doctor.sh` lists the host tools that are missing; `--fix` installs the ones that can be scripted
+(submodules, `sdkmanager` packages, Homebrew formulae).
+
+An optional third-party registry server (`mcp-Vulkan`) can be added per person: see `vulkan-spec-lookup`.
+
 ## Commands
 
 ### Android (`cd platform/android`)

@@ -10,6 +10,15 @@ target_compile_definitions(
         MLN_RENDER_BACKEND_VULKAN=1
 )
 
+if(MLN_VULKAN_VALIDATION)
+    message(STATUS "Vulkan validation layers enabled")
+    target_compile_definitions(
+            mbgl-core
+            PUBLIC
+            MLN_VULKAN_VALIDATION=1
+    )
+endif()
+
 list(APPEND
         INCLUDE_FILES
         ${PROJECT_SOURCE_DIR}/include/mln/style/layers/vulkan/custom_layer_init_parameters.hpp
