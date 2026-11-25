@@ -343,6 +343,9 @@ filled in by @daviani on an iPhone 16 Pro Max / iOS 26.6, built for device with
 | symbol occlusion | yes | same scheme as GL and Metal ([#4559](https://github.com/maplibre/maplibre-native/pull/4559)); shaders compile to SPIR-V, not yet re-checked on a device. The earlier "looks correct on device" was with the gl-js ramp of 500, which cannot fire at native's 1 px near plane | verified on the iOS simulator (2026-09-05) after scaling the fade ramp to native's 1 px near plane and packing the depth as exact base-256 digits | same scheme as GL and Metal ([#4559](https://github.com/maplibre/maplibre-native/pull/4559)); untested |
 | **fill-extrusion elevation** | yes | **yes** (2026-08-01, render test pixel-matches the GL baseline) | **yes** (2026-08-02, shaders sample the DEM; CI confirmation pending) | yes |
 | instanced depth pass | yes (GL-only by design) | n/a (per-tile path) | n/a | n/a |
+| custom layers (TrackLayer, SkyLayer) | GLES3 hosts deleted from the Cumbly fork | **yes**, raw Vulkan hosts; test against the terrain depth with the viewport depth range from `CustomLayerRenderParameters` | host-supplied | untested |
+| surface MSAA | EGL config (reverted in the fork) | **4x** surface pass, 1 sample fallback; offscreen drape / hillshade passes stay 1 sample | n/a | untested |
+| validation layer on the 3D map | n/a | quiet after the descriptor-set and offscreen-teardown fixes (2026-11-25) | n/a | n/a |
 
 **Fill-extrusion terrain elevation on Metal/Vulkan (history; both now fixed).** Metal and
 Vulkan use the instanced fill-extrusion path
@@ -1881,7 +1884,9 @@ Custom layers are not draped: `RenderCustomLayer` creates its layer group with r
 off, so the layer draws on screen in the main pass, after the terrain mesh (`TERRAIN_LAYER_INDEX`),
 with the mesh's depth in the attached depth buffer. A layer that sets its own depth test is hidden by
 the terrain in front of it. Its `projectionMatrix` is GL clip space; off GL the layer applies the
-mesh's remap, z' = (z + w) / 2, itself. `CustomLayerRenderParameters` carries the terrain
+mesh's remap, z' = (z + w) / 2, itself. On Vulkan the layer's viewport must also use the terrain's depth
+range (`minDepth` / `maxDepth` in `style::vulkan::CustomLayerRenderParameters`, with `extent` and `sampleCount`),
+otherwise its depth lands behind the mesh and a depth test hides it. `CustomLayerRenderParameters` carries the terrain
 exaggeration (0 with terrain off), and on Metal the packed depth texture `RenderTerrain::renderDepth`
 draws before the main pass (null until it has drawn); iOS hands them over as
 `MLNStyleLayerDrawingContext.terrainExaggeration` and `MLNCustomStyleLayer.terrainDepthTexture`.
