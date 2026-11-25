@@ -1,3 +1,3 @@
 FROM squidfunk/mkdocs-material
 
-RUN pip install mkdocs-macros-plugin mkdocs-redirects
+RUN pip install mkdocs-macros-plugin
