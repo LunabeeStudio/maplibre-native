@@ -24,6 +24,9 @@ namespace cumbly_vk {
 
 using Dispatcher = vk::detail::DispatchLoaderDynamic;
 
+template <typename T>
+using Unique = vk::UniqueHandle<T, Dispatcher>;
+
 struct Gpu {
     vk::Device device;
     vk::PhysicalDevice physicalDevice;
@@ -66,7 +69,7 @@ inline std::vector<uint32_t> compileGlsl(const char* label, EShLanguage stage, c
     return spirv;
 }
 
-inline vk::UniqueShaderModule createShaderModule(const Gpu& gpu, const char* label, EShLanguage stage, const char* source) {
+inline Unique<vk::ShaderModule> createShaderModule(const Gpu& gpu, const char* label, EShLanguage stage, const char* source) {
     const auto spirv = compileGlsl(label, stage, source);
     if (spirv.empty()) return {};
     try {
@@ -79,8 +82,8 @@ inline vk::UniqueShaderModule createShaderModule(const Gpu& gpu, const char* lab
 }
 
 struct HostBuffer {
-    vk::UniqueBuffer buffer;
-    vk::UniqueDeviceMemory memory;
+    Unique<vk::Buffer> buffer;
+    Unique<vk::DeviceMemory> memory;
     vk::DeviceSize size = 0;
 
     explicit operator bool() const { return static_cast<bool>(buffer); }
@@ -168,7 +171,7 @@ struct PipelineSpec {
     bool depthTest = false;
 };
 
-inline vk::UniquePipeline createPipeline(const Gpu& gpu,
+inline Unique<vk::Pipeline> createPipeline(const Gpu& gpu,
                                          const PipelineSpec& spec,
                                          vk::RenderPass renderPass,
                                          vk::SampleCountFlagBits sampleCount) {
@@ -229,7 +232,7 @@ inline vk::UniquePipeline createPipeline(const Gpu& gpu,
 
 constexpr uint32_t kPushConstantBytes = 128;
 
-inline vk::UniquePipelineLayout createPushConstantLayout(const Gpu& gpu) {
+inline Unique<vk::PipelineLayout> createPushConstantLayout(const Gpu& gpu) {
     const auto range = vk::PushConstantRange()
                            .setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
                            .setOffset(0)
