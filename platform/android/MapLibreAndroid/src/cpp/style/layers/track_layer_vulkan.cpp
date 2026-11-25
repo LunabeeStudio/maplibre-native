@@ -158,13 +158,15 @@ public:
         const std::string cursorVertex = std::string(kCursorVertexShader) + cumbly_vk::kFinishClipGlsl + kCursorMain;
         lineVertexModule = cumbly_vk::createShaderModule(gpu, "TrackLayer line", EShLangVertex, lineVertex.c_str());
         lineFragmentModule = cumbly_vk::createShaderModule(gpu, "TrackLayer line", EShLangFragment, kFragmentShader);
-        cursorVertexModule = cumbly_vk::createShaderModule(gpu, "TrackLayer cursor", EShLangVertex, cursorVertex.c_str());
-        cursorFragmentModule =
-            cumbly_vk::createShaderModule(gpu, "TrackLayer cursor", EShLangFragment, kCursorFragmentShader);
+        cursorVertexModule = cumbly_vk::createShaderModule(
+            gpu, "TrackLayer cursor", EShLangVertex, cursorVertex.c_str());
+        cursorFragmentModule = cumbly_vk::createShaderModule(
+            gpu, "TrackLayer cursor", EShLangFragment, kCursorFragmentShader);
         pipelineLayout = cumbly_vk::createPushConstantLayout(gpu);
 
         const std::array<float, 8> corners = {-1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f};
-        cursorBuffer = cumbly_vk::createHostBuffer(gpu, corners.data(), sizeof(corners), vk::BufferUsageFlagBits::eVertexBuffer);
+        cursorBuffer = cumbly_vk::createHostBuffer(
+            gpu, corners.data(), sizeof(corners), vk::BufferUsageFlagBits::eVertexBuffer);
     }
 
     void render(const mln::style::CustomLayerRenderParameters& base) override {
@@ -210,7 +212,10 @@ public:
         const auto& cmd = params.commandBuffer;
 
         if (drawsLine) {
-            LinePush push{cumbly_common::modelViewProjection(params, originX, originY, altitudeScale), rotation, viewport, halfWidth};
+            LinePush push{cumbly_common::modelViewProjection(params, originX, originY, altitudeScale),
+                          rotation,
+                          viewport,
+                          halfWidth};
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, linePipeline.get(), params.dispatcher);
             cumbly_vk::pushConstants(params, pipelineLayout.get(), push);
             const vk::Buffer buffer = lineBuffer.handle();
@@ -222,14 +227,20 @@ public:
         if (drawsCursor) {
             const auto m = cumbly_common::modelViewProjection(params, cursor.x, cursor.y, altitudeScale);
             const float altitude = static_cast<float>(cursor.altitude);
-            const std::array<float, 4> center = {m[12] + altitude * m[8],
-                                                 m[13] + altitude * m[9],
-                                                 m[14] + altitude * m[10],
-                                                 m[15] + altitude * m[11]};
+            const std::array<float, 4> center = {
+                m[12] + altitude * m[8], m[13] + altitude * m[9], m[14] + altitude * m[10], m[15] + altitude * m[11]};
             if (center[3] > 0.0f) {
                 const float fillRadius = cursor.diameter * 0.5f;
                 const float outerRadius = fillRadius + cursor.outlineWidth;
-                CursorPush push{center, rotation, viewport, outerRadius + 1.0f, fillRadius, outerRadius, {}, cursor.fill, cursor.outline};
+                CursorPush push{center,
+                                rotation,
+                                viewport,
+                                outerRadius + 1.0f,
+                                fillRadius,
+                                outerRadius,
+                                {},
+                                cursor.fill,
+                                cursor.outline};
                 cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, cursorPipeline.get(), params.dispatcher);
                 cumbly_vk::pushConstants(params, pipelineLayout.get(), push);
                 const vk::Buffer buffer = cursorBuffer.handle();
@@ -259,7 +270,8 @@ private:
         line.fragment = lineFragmentModule.get();
         line.layout = pipelineLayout.get();
         line.topology = vk::PrimitiveTopology::eTriangleStrip;
-        line.bindings = {vk::VertexInputBindingDescription(0, kFloatsPerVertex * sizeof(float), vk::VertexInputRate::eVertex)};
+        line.bindings = {
+            vk::VertexInputBindingDescription(0, kFloatsPerVertex * sizeof(float), vk::VertexInputRate::eVertex)};
         line.attributes = {
             vk::VertexInputAttributeDescription(0, 0, vk::Format::eR32G32B32Sfloat, 0),
             vk::VertexInputAttributeDescription(1, 0, vk::Format::eR32G32B32Sfloat, 3 * sizeof(float)),

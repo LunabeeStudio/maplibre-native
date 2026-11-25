@@ -285,13 +285,13 @@ void SurfaceRenderableResource::initMultisampleColor() {
         return;
     }
 
-    const auto imageViewCreateInfo =
-        vk::ImageViewCreateInfo()
-            .setImage(msaaColorAllocation->image)
-            .setViewType(vk::ImageViewType::e2D)
-            .setFormat(colorFormat)
-            .setComponents(vk::ComponentMapping())
-            .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+    const auto imageViewCreateInfo = vk::ImageViewCreateInfo()
+                                         .setImage(msaaColorAllocation->image)
+                                         .setViewType(vk::ImageViewType::e2D)
+                                         .setFormat(colorFormat)
+                                         .setComponents(vk::ComponentMapping())
+                                         .setSubresourceRange(
+                                             vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
 
     msaaColorAllocation->imageView = device->createImageViewUnique(imageViewCreateInfo, nullptr, dispatcher);
 
@@ -444,7 +444,8 @@ vk::SampleCountFlagBits SurfaceRenderableResource::selectSampleCount() const {
         }
     };
 
-    if (!supports(colorFormat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransientAttachment) ||
+    if (!supports(colorFormat,
+                  vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransientAttachment) ||
         !supports(depthFormat,
                   vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment)) {
         return vk::SampleCountFlagBits::e1;

@@ -28,7 +28,8 @@ inline std::array<float, 2> perspectiveCentre(const mln::style::CustomLayerRende
     const auto& m = parameters.projectionMatrix;
     const double w = m[3] * x + m[7] * y + m[15];
     if (std::abs(w) < 1e-9) return {0.0f, 0.0f};
-    return {static_cast<float>((m[0] * x + m[4] * y + m[12]) / w), static_cast<float>((m[1] * x + m[5] * y + m[13]) / w)};
+    return {static_cast<float>((m[0] * x + m[4] * y + m[12]) / w),
+            static_cast<float>((m[1] * x + m[5] * y + m[13]) / w)};
 }
 
 std::unique_ptr<mln::style::CustomLayerHost> createHost(SkyColors colors);

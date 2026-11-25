@@ -69,7 +69,10 @@ inline std::vector<uint32_t> compileGlsl(const char* label, EShLanguage stage, c
     return spirv;
 }
 
-inline Unique<vk::ShaderModule> createShaderModule(const Gpu& gpu, const char* label, EShLanguage stage, const char* source) {
+inline Unique<vk::ShaderModule> createShaderModule(const Gpu& gpu,
+                                                   const char* label,
+                                                   EShLanguage stage,
+                                                   const char* source) {
     const auto spirv = compileGlsl(label, stage, source);
     if (spirv.empty()) return {};
     try {
@@ -104,7 +107,8 @@ inline HostBuffer createHostBuffer(const Gpu& gpu, const void* data, vk::DeviceS
         const auto wanted = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
         uint32_t typeIndex = std::numeric_limits<uint32_t>::max();
         for (uint32_t i = 0; i < properties.memoryTypeCount; ++i) {
-            if ((requirements.memoryTypeBits & (1u << i)) && (properties.memoryTypes[i].propertyFlags & wanted) == wanted) {
+            if ((requirements.memoryTypeBits & (1u << i)) &&
+                (properties.memoryTypes[i].propertyFlags & wanted) == wanted) {
                 typeIndex = i;
                 break;
             }
@@ -138,8 +142,9 @@ public:
 
     void tick() {
         for (auto& entry : entries) ++entry.age;
-        entries.erase(std::remove_if(entries.begin(), entries.end(), [](const Entry& e) { return e.age > kFramesInFlight; }),
-                      entries.end());
+        entries.erase(
+            std::remove_if(entries.begin(), entries.end(), [](const Entry& e) { return e.age > kFramesInFlight; }),
+            entries.end());
     }
 
     void clear() { entries.clear(); }
@@ -172,12 +177,17 @@ struct PipelineSpec {
 };
 
 inline Unique<vk::Pipeline> createPipeline(const Gpu& gpu,
-                                         const PipelineSpec& spec,
-                                         vk::RenderPass renderPass,
-                                         vk::SampleCountFlagBits sampleCount) {
-    const std::array<vk::PipelineShaderStageCreateInfo, 2> stages = {
-        vk::PipelineShaderStageCreateInfo().setStage(vk::ShaderStageFlagBits::eVertex).setModule(spec.vertex).setPName("main"),
-        vk::PipelineShaderStageCreateInfo().setStage(vk::ShaderStageFlagBits::eFragment).setModule(spec.fragment).setPName("main")};
+                                           const PipelineSpec& spec,
+                                           vk::RenderPass renderPass,
+                                           vk::SampleCountFlagBits sampleCount) {
+    const std::array<vk::PipelineShaderStageCreateInfo, 2> stages = {vk::PipelineShaderStageCreateInfo()
+                                                                         .setStage(vk::ShaderStageFlagBits::eVertex)
+                                                                         .setModule(spec.vertex)
+                                                                         .setPName("main"),
+                                                                     vk::PipelineShaderStageCreateInfo()
+                                                                         .setStage(vk::ShaderStageFlagBits::eFragment)
+                                                                         .setModule(spec.fragment)
+                                                                         .setPName("main")};
 
     const auto vertexInput = vk::PipelineVertexInputStateCreateInfo()
                                  .setVertexBindingDescriptions(spec.bindings)
@@ -203,8 +213,9 @@ inline Unique<vk::Pipeline> createPipeline(const Gpu& gpu,
                                      .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
                                      .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
                                      .setAlphaBlendOp(vk::BlendOp::eAdd)
-                                     .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-                                                        vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
+                                     .setColorWriteMask(
+                                         vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                                         vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
     const auto colorBlend = vk::PipelineColorBlendStateCreateInfo().setAttachments(blendAttachment);
     const std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
     const auto dynamicState = vk::PipelineDynamicStateCreateInfo().setDynamicStates(dynamicStates);
@@ -247,7 +258,9 @@ inline Unique<vk::PipelineLayout> createPushConstantLayout(const Gpu& gpu) {
 }
 
 template <typename Push>
-void pushConstants(const mln::style::vulkan::CustomLayerRenderParameters& params, vk::PipelineLayout layout, const Push& push) {
+void pushConstants(const mln::style::vulkan::CustomLayerRenderParameters& params,
+                   vk::PipelineLayout layout,
+                   const Push& push) {
     static_assert(sizeof(Push) <= kPushConstantBytes);
     params.commandBuffer.pushConstants(layout,
                                        vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
@@ -258,8 +271,12 @@ void pushConstants(const mln::style::vulkan::CustomLayerRenderParameters& params
 }
 
 inline void setViewport(const mln::style::vulkan::CustomLayerRenderParameters& params) {
-    const vk::Viewport viewport(
-        0.0f, 0.0f, static_cast<float>(params.extent.width), static_cast<float>(params.extent.height), params.minDepth, params.maxDepth);
+    const vk::Viewport viewport(0.0f,
+                                0.0f,
+                                static_cast<float>(params.extent.width),
+                                static_cast<float>(params.extent.height),
+                                params.minDepth,
+                                params.maxDepth);
     const vk::Rect2D scissor({0, 0}, params.extent);
     params.commandBuffer.setViewport(0, viewport, params.dispatcher);
     params.commandBuffer.setScissor(0, scissor, params.dispatcher);

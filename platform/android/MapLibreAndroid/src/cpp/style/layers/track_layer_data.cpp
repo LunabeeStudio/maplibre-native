@@ -49,10 +49,7 @@ void setTrack(TrackData& data, const double* lonLatAltitudes, const uint32_t* ar
         std::memcpy(&packedColor, rgba.data(), sizeof(packedColor));
         for (const float side : {-1.0f, 1.0f}) {
             put(vertices, xs[i] - originX, ys[i] - originY, lonLatAltitudes[i * 3 + 2]);
-            put(vertices,
-                xs[previous] - originX,
-                ys[previous] - originY,
-                lonLatAltitudes[previous * 3 + 2]);
+            put(vertices, xs[previous] - originX, ys[previous] - originY, lonLatAltitudes[previous * 3 + 2]);
             put(vertices, xs[next] - originX, ys[next] - originY, lonLatAltitudes[next * 3 + 2]);
             vertices.push_back(side);
             vertices.push_back(packedColor);

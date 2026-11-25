@@ -20,14 +20,19 @@ std::shared_ptr<cumbly_track::TrackData>& handle(jlong state) {
 extern "C" {
 
 JNIEXPORT jlong JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeCreateState(JNIEnv*, jclass) {
-    return reinterpret_cast<jlong>(new std::shared_ptr<cumbly_track::TrackData>(std::make_shared<cumbly_track::TrackData>()));
+    return reinterpret_cast<jlong>(
+        new std::shared_ptr<cumbly_track::TrackData>(std::make_shared<cumbly_track::TrackData>()));
 }
 
-JNIEXPORT jlong JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeCreateHost(JNIEnv*, jclass, jlong state) {
+JNIEXPORT jlong JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeCreateHost(JNIEnv*,
+                                                                                           jclass,
+                                                                                           jlong state) {
     return reinterpret_cast<jlong>(cumbly_track::createHost(handle(state)).release());
 }
 
-JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeReleaseState(JNIEnv*, jclass, jlong state) {
+JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeReleaseState(JNIEnv*,
+                                                                                            jclass,
+                                                                                            jlong state) {
     delete reinterpret_cast<std::shared_ptr<cumbly_track::TrackData>*>(state);
 }
 
@@ -51,8 +56,10 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
     data->altitudeScale = altitudeScale;
 }
 
-JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeSetLineVisible(
-    JNIEnv*, jclass, jlong state, jboolean visible) {
+JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeSetLineVisible(JNIEnv*,
+                                                                                              jclass,
+                                                                                              jlong state,
+                                                                                              jboolean visible) {
     auto& data = handle(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->lineVisible = visible == JNI_TRUE;
@@ -63,7 +70,9 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
     cumbly_track::setCursor(*handle(state), longitude, latitude, altitude);
 }
 
-JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeClearCursor(JNIEnv*, jclass, jlong state) {
+JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeClearCursor(JNIEnv*,
+                                                                                           jclass,
+                                                                                           jlong state) {
     auto& data = handle(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->cursor.visible = false;

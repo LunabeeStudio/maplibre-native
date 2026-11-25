@@ -19,9 +19,9 @@ inline double mercatorY(double latitude) {
 }
 
 inline std::array<float, 16> modelViewProjection(const mln::style::CustomLayerRenderParameters& parameters,
-                                          double x,
-                                          double y,
-                                          double altitudeScale) {
+                                                 double x,
+                                                 double y,
+                                                 double altitudeScale) {
     const double worldSize = kTileSize * std::pow(2.0, parameters.zoom);
     std::array<double, 16> model{};
     model[0] = worldSize;

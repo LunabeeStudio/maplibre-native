@@ -932,6 +932,19 @@ public class SymbolLayerTest extends BaseLayerTest {
 
   @Test
   @UiThreadTest
+  public void testSymbolIgnoreTerrainOcclusionAsConstant() {
+    Timber.i("symbol-ignore-terrain-occlusion");
+    assertNotNull(layer);
+    assertNull(layer.getSymbolIgnoreTerrainOcclusion().getValue());
+
+    // Set and Get
+    Boolean propertyValue = true;
+    layer.setProperties(symbolIgnoreTerrainOcclusion(propertyValue));
+    assertEquals(layer.getSymbolIgnoreTerrainOcclusion().getValue(), propertyValue);
+  }
+
+  @Test
+  @UiThreadTest
   public void testIconOpacityTransition() {
     Timber.i("icon-opacityTransitionOptions");
     assertNotNull(layer);

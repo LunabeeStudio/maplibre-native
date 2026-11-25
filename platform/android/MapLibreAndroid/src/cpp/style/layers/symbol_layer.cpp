@@ -433,7 +433,8 @@ jni::Local<jni::Object<>> SymbolLayer::getSymbolIgnoreTerrainOcclusion(jni::JNIE
     using namespace mln::android::conversion;
     auto layer = layerPtr.get();
     if (!layer) {
-        return std::move(*convert<jni::Local<jni::Object<>>>(env, style::SymbolLayer::getDefaultSymbolIgnoreTerrainOcclusion()));
+        return std::move(
+            *convert<jni::Local<jni::Object<>>>(env, style::SymbolLayer::getDefaultSymbolIgnoreTerrainOcclusion()));
     }
     return std::move(*convert<jni::Local<jni::Object<>>>(env, toSymbolLayer(*layer).getSymbolIgnoreTerrainOcclusion()));
 }

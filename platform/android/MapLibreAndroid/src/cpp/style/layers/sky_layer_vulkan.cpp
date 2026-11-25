@@ -83,7 +83,8 @@ public:
 
     void render(const mln::style::CustomLayerRenderParameters& base) override {
         const auto& params = static_cast<const mln::style::vulkan::CustomLayerRenderParameters&>(base);
-        if (!gpu || !pipelineLayout || !vertexModule || !fragmentModule || params.width <= 0.0 || params.height <= 0.0) {
+        if (!gpu || !pipelineLayout || !vertexModule || !fragmentModule || params.width <= 0.0 ||
+            params.height <= 0.0) {
             return;
         }
 
