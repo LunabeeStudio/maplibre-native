@@ -23,6 +23,10 @@ CustomLayerRenderParameters::CustomLayerRenderParameters(const mln::PaintParamet
     const auto& resource = renderable.getResource<mln::vulkan::RenderableResource>();
     renderPass = resource.getRenderPass().get();
     sampleCount = resource.getSampleCount();
+    extent = resource.getExtent();
+    const auto depthRange = paintParameters.depthModeFor3D().range;
+    minDepth = depthRange.min;
+    maxDepth = depthRange.max;
     screenPreRotationRadiansClockwise = resource.getRotation();
 }
 

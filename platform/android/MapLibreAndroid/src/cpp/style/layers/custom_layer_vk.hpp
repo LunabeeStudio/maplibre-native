@@ -258,10 +258,9 @@ void pushConstants(const mln::style::vulkan::CustomLayerRenderParameters& params
 }
 
 inline void setViewport(const mln::style::vulkan::CustomLayerRenderParameters& params) {
-    const auto width = static_cast<float>(params.width);
-    const auto height = static_cast<float>(params.height);
-    const vk::Viewport viewport(0.0f, 0.0f, width, height, 0.0f, 1.0f);
-    const vk::Rect2D scissor({0, 0}, {static_cast<uint32_t>(params.width), static_cast<uint32_t>(params.height)});
+    const vk::Viewport viewport(
+        0.0f, 0.0f, static_cast<float>(params.extent.width), static_cast<float>(params.extent.height), params.minDepth, params.maxDepth);
+    const vk::Rect2D scissor({0, 0}, params.extent);
     params.commandBuffer.setViewport(0, viewport, params.dispatcher);
     params.commandBuffer.setScissor(0, scissor, params.dispatcher);
 }
