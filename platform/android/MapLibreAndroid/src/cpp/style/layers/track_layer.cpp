@@ -5,6 +5,8 @@
 #include <mln/style/layers/custom_layer_render_parameters.hpp>
 #include <mln/util/logging.hpp>
 
+#include "custom_layer_gl.hpp"
+
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -15,8 +17,6 @@
 #include <vector>
 
 namespace {
-
-constexpr double kTileSize = 512.0;
 
 struct Cursor {
     bool visible = false;
@@ -139,54 +139,11 @@ void main() {
 }
 )";
 
-GLuint compile(GLenum type, const char* source) {
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, nullptr);
-    glCompileShader(shader);
-    GLint status = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-    if (status == GL_FALSE) {
-        std::array<char, 1024> log{};
-        glGetShaderInfoLog(shader, static_cast<GLsizei>(log.size()), nullptr, log.data());
-        mln::Log::Error(mln::Event::Render, std::string("TrackLayer shader: ") + log.data());
-        glDeleteShader(shader);
-        return 0;
-    }
-    return shader;
-}
-
-GLuint link(const char* vertexSource, const char* fragmentSource, std::initializer_list<const char*> attributes) {
-    GLuint vertexShader = compile(GL_VERTEX_SHADER, vertexSource);
-    GLuint fragmentShader = compile(GL_FRAGMENT_SHADER, fragmentSource);
-    if (vertexShader == 0 || fragmentShader == 0) {
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-        return 0;
-    }
-    GLuint program = glCreateProgram();
-    glAttachShader(program, vertexShader);
-    glAttachShader(program, fragmentShader);
-    GLuint index = 0;
-    for (const char* attribute : attributes) {
-        glBindAttribLocation(program, index++, attribute);
-    }
-    glLinkProgram(program);
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-    GLint status = 0;
-    glGetProgramiv(program, GL_LINK_STATUS, &status);
-    if (status == GL_FALSE) {
-        glDeleteProgram(program);
-        return 0;
-    }
-    return program;
-}
-
 std::array<float, 16> modelViewProjection(const mln::style::CustomLayerRenderParameters& parameters,
                                           double x,
                                           double y,
                                           double altitudeScale) {
-    const double worldSize = kTileSize * std::pow(2.0, parameters.zoom);
+    const double worldSize = cumbly_gl::kTileSize * std::pow(2.0, parameters.zoom);
     std::array<double, 16> model{};
     model[0] = worldSize;
     model[5] = worldSize;
@@ -213,7 +170,7 @@ public:
         : data(std::move(data_)) {}
 
     void initialize(const mln::style::CustomLayerInitParameters&) override {
-        program = link(kVertexShader, kFragmentShader, {"a_pos", "a_prev", "a_next", "a_side", "a_color"});
+        program = cumbly_gl::link("TrackLayer", kVertexShader, kFragmentShader, {"a_pos", "a_prev", "a_next", "a_side", "a_color"});
         if (program != 0) {
             matrixLocation = glGetUniformLocation(program, "u_matrix");
             viewportLocation = glGetUniformLocation(program, "u_viewport");
@@ -221,7 +178,7 @@ public:
             glGenVertexArrays(1, &vertexArray);
             glGenBuffers(1, &buffer);
         }
-        cursorProgram = link(kCursorVertexShader, kCursorFragmentShader, {"a_corner"});
+        cursorProgram = cumbly_gl::link("TrackLayer", kCursorVertexShader, kCursorFragmentShader, {"a_corner"});
         if (cursorProgram != 0) {
             cursorMatrixLocation = glGetUniformLocation(cursorProgram, "u_matrix");
             cursorViewportLocation = glGetUniformLocation(cursorProgram, "u_viewport");
@@ -375,19 +332,6 @@ private:
     uint64_t uploadedRevision = 0;
 };
 
-std::shared_ptr<TrackData>& handle(jlong state) {
-    return *reinterpret_cast<std::shared_ptr<TrackData>*>(state);
-}
-
-double mercatorX(double longitude) {
-    return (longitude + 180.0) / 360.0;
-}
-
-double mercatorY(double latitude) {
-    const double radians = latitude * M_PI / 180.0;
-    return (1.0 - std::log(std::tan(radians) + 1.0 / std::cos(radians)) / M_PI) / 2.0;
-}
-
 std::array<float, 4> unpackColor(jint argb) {
     const uint32_t color = static_cast<uint32_t>(argb);
     return {static_cast<float>((color >> 16) & 0xFF) / 255.0f,
@@ -411,7 +355,7 @@ JNIEXPORT jlong JNICALL Java_org_maplibre_android_style_layers_TrackLayer_native
 }
 
 JNIEXPORT jlong JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeCreateHost(JNIEnv*, jclass, jlong state) {
-    return reinterpret_cast<jlong>(new TrackLayerHost(handle(state)));
+    return reinterpret_cast<jlong>(new TrackLayerHost(cumbly_gl::handle<TrackData>(state)));
 }
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeReleaseState(JNIEnv*, jclass, jlong state) {
@@ -430,8 +374,8 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
     std::vector<double> xs(static_cast<size_t>(pointCount));
     std::vector<double> ys(static_cast<size_t>(pointCount));
     for (jsize i = 0; i < pointCount; ++i) {
-        xs[i] = mercatorX(lonLatAlt[i * 3]);
-        ys[i] = mercatorY(lonLatAlt[i * 3 + 1]);
+        xs[i] = cumbly_gl::mercatorX(lonLatAlt[i * 3]);
+        ys[i] = cumbly_gl::mercatorY(lonLatAlt[i * 3 + 1]);
     }
     const double originX = pointCount > 0 ? xs[0] : 0.0;
     const double originY = pointCount > 0 ? ys[0] : 0.0;
@@ -458,7 +402,7 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
         }
     }
 
-    auto& data = handle(state);
+    auto& data = cumbly_gl::handle<TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->vertices = std::move(vertices);
     data->originX = originX;
@@ -468,7 +412,7 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeSetStyle(
     JNIEnv*, jclass, jlong state, jfloat halfWidth, jfloat altitudeScale) {
-    auto& data = handle(state);
+    auto& data = cumbly_gl::handle<TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->halfWidth = halfWidth;
     data->altitudeScale = altitudeScale;
@@ -476,16 +420,16 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeSetLineVisible(
     JNIEnv*, jclass, jlong state, jboolean visible) {
-    auto& data = handle(state);
+    auto& data = cumbly_gl::handle<TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->lineVisible = visible == JNI_TRUE;
 }
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeSetCursor(
     JNIEnv*, jclass, jlong state, jdouble longitude, jdouble latitude, jdouble altitude) {
-    const double x = mercatorX(longitude);
-    const double y = mercatorY(latitude);
-    auto& data = handle(state);
+    const double x = cumbly_gl::mercatorX(longitude);
+    const double y = cumbly_gl::mercatorY(latitude);
+    auto& data = cumbly_gl::handle<TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->cursor.visible = true;
     data->cursor.x = x;
@@ -494,14 +438,14 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
 }
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeClearCursor(JNIEnv*, jclass, jlong state) {
-    auto& data = handle(state);
+    auto& data = cumbly_gl::handle<TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->cursor.visible = false;
 }
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeSetCursorStyle(
     JNIEnv*, jclass, jlong state, jfloat diameter, jfloat outlineWidth, jint fillColor, jint outlineColor) {
-    auto& data = handle(state);
+    auto& data = cumbly_gl::handle<TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->cursor.diameter = diameter;
     data->cursor.outlineWidth = outlineWidth;
