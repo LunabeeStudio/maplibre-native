@@ -8,7 +8,7 @@
 #include <cmath>
 #include <memory>
 
-namespace cumbly_gl {
+namespace cumbly_common {
 
 constexpr double kTileSize = 512.0;
 
@@ -51,4 +51,4 @@ inline std::array<float, 16> modelViewProjection(const mln::style::CustomLayerRe
     return matrix;
 }
 
-} // namespace cumbly_gl
+} // namespace cumbly_common

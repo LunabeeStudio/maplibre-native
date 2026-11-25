@@ -37,7 +37,7 @@ JNIEXPORT jlong JNICALL Java_org_maplibre_android_style_layers_TrackLayer_native
 }
 
 JNIEXPORT jlong JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeCreateHost(JNIEnv*, jclass, jlong state) {
-    return reinterpret_cast<jlong>(cumbly_track::createHost(cumbly_gl::handle<cumbly_track::TrackData>(state)).release());
+    return reinterpret_cast<jlong>(cumbly_track::createHost(cumbly_common::handle<cumbly_track::TrackData>(state)).release());
 }
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeReleaseState(JNIEnv*, jclass, jlong state) {
@@ -56,8 +56,8 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
     std::vector<double> xs(static_cast<size_t>(pointCount));
     std::vector<double> ys(static_cast<size_t>(pointCount));
     for (jsize i = 0; i < pointCount; ++i) {
-        xs[i] = cumbly_gl::mercatorX(lonLatAlt[i * 3]);
-        ys[i] = cumbly_gl::mercatorY(lonLatAlt[i * 3 + 1]);
+        xs[i] = cumbly_common::mercatorX(lonLatAlt[i * 3]);
+        ys[i] = cumbly_common::mercatorY(lonLatAlt[i * 3 + 1]);
     }
     const double originX = pointCount > 0 ? xs[0] : 0.0;
     const double originY = pointCount > 0 ? ys[0] : 0.0;
@@ -84,7 +84,7 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
         }
     }
 
-    auto& data = cumbly_gl::handle<cumbly_track::TrackData>(state);
+    auto& data = cumbly_common::handle<cumbly_track::TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->vertices = std::move(vertices);
     data->originX = originX;
@@ -94,7 +94,7 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeSetStyle(
     JNIEnv*, jclass, jlong state, jfloat halfWidth, jfloat altitudeScale) {
-    auto& data = cumbly_gl::handle<cumbly_track::TrackData>(state);
+    auto& data = cumbly_common::handle<cumbly_track::TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->halfWidth = halfWidth;
     data->altitudeScale = altitudeScale;
@@ -102,16 +102,16 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeSetLineVisible(
     JNIEnv*, jclass, jlong state, jboolean visible) {
-    auto& data = cumbly_gl::handle<cumbly_track::TrackData>(state);
+    auto& data = cumbly_common::handle<cumbly_track::TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->lineVisible = visible == JNI_TRUE;
 }
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeSetCursor(
     JNIEnv*, jclass, jlong state, jdouble longitude, jdouble latitude, jdouble altitude) {
-    const double x = cumbly_gl::mercatorX(longitude);
-    const double y = cumbly_gl::mercatorY(latitude);
-    auto& data = cumbly_gl::handle<cumbly_track::TrackData>(state);
+    const double x = cumbly_common::mercatorX(longitude);
+    const double y = cumbly_common::mercatorY(latitude);
+    auto& data = cumbly_common::handle<cumbly_track::TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->cursor.visible = true;
     data->cursor.x = x;
@@ -120,14 +120,14 @@ JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeS
 }
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeClearCursor(JNIEnv*, jclass, jlong state) {
-    auto& data = cumbly_gl::handle<cumbly_track::TrackData>(state);
+    auto& data = cumbly_common::handle<cumbly_track::TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->cursor.visible = false;
 }
 
 JNIEXPORT void JNICALL Java_org_maplibre_android_style_layers_TrackLayer_nativeSetCursorStyle(
     JNIEnv*, jclass, jlong state, jfloat diameter, jfloat outlineWidth, jint fillColor, jint outlineColor) {
-    auto& data = cumbly_gl::handle<cumbly_track::TrackData>(state);
+    auto& data = cumbly_common::handle<cumbly_track::TrackData>(state);
     std::lock_guard<std::mutex> lock(data->mutex);
     data->cursor.diameter = diameter;
     data->cursor.outlineWidth = outlineWidth;

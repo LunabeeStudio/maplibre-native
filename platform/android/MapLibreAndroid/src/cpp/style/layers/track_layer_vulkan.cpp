@@ -210,7 +210,7 @@ public:
         const auto& cmd = params.commandBuffer;
 
         if (drawsLine) {
-            LinePush push{cumbly_gl::modelViewProjection(params, originX, originY, altitudeScale), rotation, viewport, halfWidth};
+            LinePush push{cumbly_common::modelViewProjection(params, originX, originY, altitudeScale), rotation, viewport, halfWidth};
             cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, linePipeline.get(), params.dispatcher);
             cumbly_vk::pushConstants(params, pipelineLayout.get(), push);
             const vk::Buffer buffer = lineBuffer.handle();
@@ -220,7 +220,7 @@ public:
         }
 
         if (drawsCursor) {
-            const auto m = cumbly_gl::modelViewProjection(params, cursor.x, cursor.y, altitudeScale);
+            const auto m = cumbly_common::modelViewProjection(params, cursor.x, cursor.y, altitudeScale);
             const float altitude = static_cast<float>(cursor.altitude);
             const std::array<float, 4> center = {m[12] + altitude * m[8],
                                                  m[13] + altitude * m[9],
