@@ -22,6 +22,7 @@ CustomLayerRenderParameters::CustomLayerRenderParameters(const mln::PaintParamet
     const auto& renderable = paintParameters.backend.getDefaultRenderable();
     const auto& resource = renderable.getResource<mln::vulkan::RenderableResource>();
     renderPass = resource.getRenderPass().get();
+    sampleCount = resource.getSampleCount();
     screenPreRotationRadiansClockwise = resource.getRotation();
 }
 

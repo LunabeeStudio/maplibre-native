@@ -193,6 +193,7 @@ void SurfaceRenderableResource::initDepthStencil() {
     }
 
     setDepthFormat(*formatIt);
+    setSampleCount(selectSampleCount());
 
     const auto imageUsage = vk::ImageUsageFlags() | vk::ImageUsageFlagBits::eDepthStencilAttachment |
                             vk::ImageUsageFlagBits::eTransientAttachment;
@@ -203,7 +204,7 @@ void SurfaceRenderableResource::initDepthStencil() {
                                      .setExtent({extent.width, extent.height, 1})
                                      .setMipLevels(1)
                                      .setArrayLayers(1)
-                                     .setSamples(vk::SampleCountFlagBits::e1)
+                                     .setSamples(sampleCount)
                                      .setTiling(vk::ImageTiling::eOptimal)
                                      .setUsage(imageUsage)
                                      .setSharingMode(vk::SharingMode::eExclusive)
@@ -241,6 +242,63 @@ void SurfaceRenderableResource::initDepthStencil() {
     backend.setDebugName(depthAllocation->imageView.get(), "SwapchainDepthImageView");
 }
 
+void SurfaceRenderableResource::initMultisampleColor() {
+    msaaColorAllocation.reset();
+
+    if (sampleCount == vk::SampleCountFlagBits::e1) {
+        return;
+    }
+
+    const auto& device = backend.getDevice();
+    const auto& dispatcher = backend.getDispatcher();
+
+    const auto imageCreateInfo = vk::ImageCreateInfo()
+                                     .setImageType(vk::ImageType::e2D)
+                                     .setFormat(colorFormat)
+                                     .setExtent({extent.width, extent.height, 1})
+                                     .setMipLevels(1)
+                                     .setArrayLayers(1)
+                                     .setSamples(sampleCount)
+                                     .setTiling(vk::ImageTiling::eOptimal)
+                                     .setUsage(vk::ImageUsageFlagBits::eColorAttachment |
+                                               vk::ImageUsageFlagBits::eTransientAttachment)
+                                     .setSharingMode(vk::SharingMode::eExclusive)
+                                     .setInitialLayout(vk::ImageLayout::eUndefined);
+
+    VmaAllocationCreateInfo allocCreateInfo = {};
+    allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_LAZILY_ALLOCATED;
+    allocCreateInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+
+    uint32_t lazyMemoryIndex = 0;
+    if (vmaFindMemoryTypeIndex(
+            backend.getAllocator(), std::numeric_limits<uint32_t>::max(), &allocCreateInfo, &lazyMemoryIndex) !=
+        VK_SUCCESS) {
+        allocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+    }
+
+    msaaColorAllocation = std::make_unique<ImageAllocation>(backend.getAllocator());
+    if (!msaaColorAllocation->create(allocCreateInfo, imageCreateInfo)) {
+        mln::Log::Error(mln::Event::Render, "Vulkan multisampled color texture allocation failed");
+        msaaColorAllocation.reset();
+        multisampleFailed = true;
+        setSampleCount(vk::SampleCountFlagBits::e1);
+        return;
+    }
+
+    const auto imageViewCreateInfo =
+        vk::ImageViewCreateInfo()
+            .setImage(msaaColorAllocation->image)
+            .setViewType(vk::ImageViewType::e2D)
+            .setFormat(colorFormat)
+            .setComponents(vk::ComponentMapping())
+            .setSubresourceRange(vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+
+    msaaColorAllocation->imageView = device->createImageViewUnique(imageViewCreateInfo, nullptr, dispatcher);
+
+    backend.setDebugName(msaaColorAllocation->image, "SwapchainMultisampleColorImage");
+    backend.setDebugName(msaaColorAllocation->imageView.get(), "SwapchainMultisampleColorImageView");
+}
+
 void SurfaceRenderableResource::initRenderPass() {
     // The current render pass should be invalidated if:
     // - color/depth format changes (use setColorFormat/setDepthFormat)
@@ -255,20 +313,22 @@ void SurfaceRenderableResource::initRenderPass() {
     const auto& dispatcher = backend.getDispatcher();
     const auto colorLayout = surface ? vk::ImageLayout::ePresentSrcKHR : vk::ImageLayout::eTransferSrcOptimal;
 
-    const std::array<vk::AttachmentDescription, 2> attachments = {
+    const bool multisampled = sampleCount != vk::SampleCountFlagBits::e1;
+
+    std::vector<vk::AttachmentDescription> attachments = {
         vk::AttachmentDescription()
             .setFormat(colorFormat)
-            .setSamples(vk::SampleCountFlagBits::e1)
+            .setSamples(sampleCount)
             .setLoadOp(vk::AttachmentLoadOp::eClear)
-            .setStoreOp(vk::AttachmentStoreOp::eStore)
+            .setStoreOp(multisampled ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore)
             .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
             .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setInitialLayout(vk::ImageLayout::eUndefined)
-            .setFinalLayout(colorLayout),
+            .setFinalLayout(multisampled ? vk::ImageLayout::eColorAttachmentOptimal : colorLayout),
 
         vk::AttachmentDescription()
             .setFormat(depthFormat)
-            .setSamples(vk::SampleCountFlagBits::e1)
+            .setSamples(sampleCount)
             .setLoadOp(vk::AttachmentLoadOp::eClear)
             .setStoreOp(vk::AttachmentStoreOp::eDontCare)
             .setStencilLoadOp(vk::AttachmentLoadOp::eClear)
@@ -276,14 +336,31 @@ void SurfaceRenderableResource::initRenderPass() {
             .setInitialLayout(vk::ImageLayout::eUndefined)
             .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)};
 
+    if (multisampled) {
+        attachments.push_back(vk::AttachmentDescription()
+                                  .setFormat(colorFormat)
+                                  .setSamples(vk::SampleCountFlagBits::e1)
+                                  .setLoadOp(vk::AttachmentLoadOp::eDontCare)
+                                  .setStoreOp(vk::AttachmentStoreOp::eStore)
+                                  .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+                                  .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+                                  .setInitialLayout(vk::ImageLayout::eUndefined)
+                                  .setFinalLayout(colorLayout));
+    }
+
     const vk::AttachmentReference colorAttachmentRef(0, vk::ImageLayout::eColorAttachmentOptimal);
     const vk::AttachmentReference depthAttachmentRef(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+    const vk::AttachmentReference resolveAttachmentRef(2, vk::ImageLayout::eColorAttachmentOptimal);
 
-    const auto subpass = vk::SubpassDescription()
-                             .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-                             .setColorAttachmentCount(1)
-                             .setColorAttachments(colorAttachmentRef)
-                             .setPDepthStencilAttachment(&depthAttachmentRef);
+    auto subpass = vk::SubpassDescription()
+                       .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+                       .setColorAttachmentCount(1)
+                       .setColorAttachments(colorAttachmentRef)
+                       .setPDepthStencilAttachment(&depthAttachmentRef);
+
+    if (multisampled) {
+        subpass.setPResolveAttachments(&resolveAttachmentRef);
+    }
 
     const std::array<vk::SubpassDependency, 2> dependencies = {
         vk::SubpassDependency()
@@ -329,6 +406,51 @@ void SurfaceRenderableResource::setDepthFormat(vk::Format format) {
 
     renderPass.reset();
     depthFormat = format;
+}
+
+void SurfaceRenderableResource::setSampleCount(vk::SampleCountFlagBits count) {
+    if (sampleCount == count) {
+        return;
+    }
+
+    renderPass.reset();
+    sampleCount = count;
+}
+
+vk::SampleCountFlagBits SurfaceRenderableResource::selectSampleCount() const {
+    constexpr auto desired = vk::SampleCountFlagBits::e4;
+
+    // only windowed surfaces are multisampled, headless output stays single sampled
+    if (!surface || multisampleFailed) {
+        return vk::SampleCountFlagBits::e1;
+    }
+
+    const auto& physicalDevice = backend.getPhysicalDevice();
+    const auto& dispatcher = backend.getDispatcher();
+
+    const auto limits = physicalDevice.getProperties(dispatcher).limits;
+    if (!(limits.framebufferColorSampleCounts & desired) || !(limits.framebufferDepthSampleCounts & desired) ||
+        !(limits.framebufferStencilSampleCounts & desired)) {
+        return vk::SampleCountFlagBits::e1;
+    }
+
+    const auto supports = [&](vk::Format format, vk::ImageUsageFlags usage) {
+        try {
+            const auto props = physicalDevice.getImageFormatProperties(
+                format, vk::ImageType::e2D, vk::ImageTiling::eOptimal, usage, {}, dispatcher);
+            return static_cast<bool>(props.sampleCounts & desired);
+        } catch (const vk::SystemError&) {
+            return false;
+        }
+    };
+
+    if (!supports(colorFormat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransientAttachment) ||
+        !supports(depthFormat,
+                  vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment)) {
+        return vk::SampleCountFlagBits::e1;
+    }
+
+    return desired;
 }
 
 void SurfaceRenderableResource::swap() {
@@ -425,6 +547,13 @@ void SurfaceRenderableResource::init(uint32_t w, uint32_t h) {
     // depth resources
     initDepthStencil();
 
+    // multisampled color resources, depth is recreated single sampled if they can't be allocated
+    const auto depthSampleCount = sampleCount;
+    initMultisampleColor();
+    if (depthSampleCount != sampleCount) {
+        initDepthStencil();
+    }
+
     // create render pass
     initRenderPass();
 
@@ -433,13 +562,17 @@ void SurfaceRenderableResource::init(uint32_t w, uint32_t h) {
 
     auto framebufferCreateInfo = vk::FramebufferCreateInfo()
                                      .setRenderPass(renderPass.get())
-                                     .setAttachmentCount(2)
                                      .setWidth(extent.width)
                                      .setHeight(extent.height)
                                      .setLayers(1);
 
     for (const auto& imageView : swapchainImageViews) {
-        const std::array<vk::ImageView, 2> imageViews = {imageView.get(), depthAllocation->imageView.get()};
+        std::vector<vk::ImageView> imageViews;
+        if (sampleCount != vk::SampleCountFlagBits::e1) {
+            imageViews = {msaaColorAllocation->imageView.get(), depthAllocation->imageView.get(), imageView.get()};
+        } else {
+            imageViews = {imageView.get(), depthAllocation->imageView.get()};
+        }
 
         framebufferCreateInfo.setAttachments(imageViews);
         swapchainFramebuffers.push_back(device->createFramebufferUnique(framebufferCreateInfo, nullptr, dispatcher));
@@ -492,6 +625,7 @@ void SurfaceRenderableResource::destroyResources() {
     presentSemaphores.clear();
 
     depthAllocation.reset();
+    msaaColorAllocation.reset();
     colorAllocations.clear();
 
     readTexture.reset();

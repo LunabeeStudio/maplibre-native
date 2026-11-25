@@ -215,7 +215,7 @@ public:
         const auto &cmd = params.commandBuffer;
 
         if (!pipeline) {
-            createPipeline(params.device, dispatcher, params.renderPass);
+            createPipeline(params.device, dispatcher, params.renderPass, params.sampleCount);
         }
 
         if (!pipeline) return;
@@ -300,7 +300,8 @@ private:
 
     void createPipeline(const vk::Device &device,
                         const vk::detail::DispatchLoaderDynamic &dispatcher,
-                        vk::RenderPass renderPass) {
+                        vk::RenderPass renderPass,
+                        vk::SampleCountFlagBits sampleCount) {
         if (!vertexModule || !fragmentModule || !pipelineLayout) return;
 
         const std::array<vk::PipelineShaderStageCreateInfo, 2> stages = {{
@@ -344,7 +345,7 @@ private:
         };
 
         const vk::PipelineMultisampleStateCreateInfo multisampling{
-            .rasterizationSamples = vk::SampleCountFlagBits::e1,
+            .rasterizationSamples = sampleCount,
         };
 
         const vk::PipelineColorBlendAttachmentState blendAttachment{

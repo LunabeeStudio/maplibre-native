@@ -47,6 +47,7 @@ public:
     // False when rendering into an offscreen target with no stencil attachment (e.g. the
     // terrain drape RTT, which has depth but no stencil); stencil test/write must be off.
     bool renderPassHasStencil = true;
+    vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
     vk::Viewport viewport{};
     vk::Rect2D scissorRect{};
 

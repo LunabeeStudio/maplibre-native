@@ -20,6 +20,9 @@ struct CustomLayerRenderParameters : mln::style::CustomLayerRenderParameters {
     /// Compatible render pass handle — use when creating VkPipeline.
     vk::RenderPass renderPass;
 
+    /// Sample count of the render pass attachments — use as rasterizationSamples when creating VkPipeline.
+    vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
+
     /// Active command buffer for the current render pass — record all draw calls here.
     vk::CommandBuffer commandBuffer;
 
