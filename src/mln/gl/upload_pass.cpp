@@ -30,7 +30,6 @@ std::unique_ptr<gfx::VertexBufferResource> UploadPass::createVertexBufferResourc
                                                                                   const std::size_t size,
                                                                                   const gfx::BufferUsageType usage,
                                                                                   bool /*persistent*/) {
-    glDiscardPendingErrors();
     BufferID id = 0;
     MBGL_CHECK_ERROR(glGenBuffers(1, &id));
 
@@ -58,7 +57,6 @@ std::unique_ptr<gfx::IndexBufferResource> UploadPass::createIndexBufferResource(
                                                                                 std::size_t size,
                                                                                 const gfx::BufferUsageType usage,
                                                                                 bool /*persistent*/) {
-    glDiscardPendingErrors();
     BufferID id = 0;
     MBGL_CHECK_ERROR(glGenBuffers(1, &id));
 
