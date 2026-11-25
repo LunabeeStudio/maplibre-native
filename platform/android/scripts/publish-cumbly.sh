@@ -8,8 +8,9 @@
 #   --flavor opengl|vulkan   renderer flavor (default: opengl)
 #   --abis "<list>"          space-separated ABIs, e.g. "arm64-v8a x86_64", or "all" (default: all)
 #
-# The version is `<platform/android/VERSION>-cumbly-<short HEAD sha>`, e.g. `13.6.1-cumbly-7843af5`,
-# and the artifact is `org.maplibre.gl:android-sdk-<flavor>`. A local build of a tree with
+# The version is `<platform/android/VERSION>-cumbly-<HEAD commit time, Unix seconds>-<short HEAD sha>`,
+# e.g. `13.7.1-cumbly-1795615450-608efb0`, so versions of one VERSION sort by commit time
+# (alphabetically too: the timestamp has 10 digits until 2286), and the artifact is `org.maplibre.gl:android-sdk-<flavor>`. A local build of a tree with
 # uncommitted changes gets a `-dirty` suffix; an Artifactory build refuses one, and refuses a
 # version already there, so every published version maps to one commit.
 #
@@ -19,7 +20,7 @@
 set -euo pipefail
 
 usage() {
-    sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
@@ -55,7 +56,10 @@ android_dir="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$android_dir"
 
 sha="$(git rev-parse --short=7 HEAD)"
-version="$(tr -d '[:space:]' < VERSION)-cumbly-${sha}"
+# Committer time, not author time: a rebase keeps the author time but gives each commit a new
+# committer time, so a rebased commit still sorts after everything published before it.
+timestamp="$(git log -1 --format=%ct HEAD)"
+version="$(tr -d '[:space:]' < VERSION)-cumbly-${timestamp}-${sha}"
 if [[ -n "$(git status --porcelain --untracked-files=no -- "$(git rev-parse --show-toplevel)")" ]]; then
     if [[ "$target" == "artifactory" ]]; then
         echo "uncommitted changes: commit them first, so the published version maps to a commit" >&2

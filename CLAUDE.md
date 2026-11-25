@@ -28,7 +28,8 @@ scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-n
 ```
 
 - Artifact `org.maplibre.gl:android-sdk-opengl` (`--flavor vulkan` gives `android-sdk-vulkan`), version
-  `<platform/android/VERSION>-cumbly-<short HEAD sha>`, e.g. `13.6.1-cumbly-7843af5`. A local build of a dirty tree
+  `<platform/android/VERSION>-cumbly-<HEAD committer time, Unix seconds>-<short HEAD sha>`, e.g.
+  `13.7.1-cumbly-1795615450-608efb0`, so versions sort by commit time. A local build of a dirty tree
   gets `-dirty`; `artifactory` refuses one. `--abis "arm64-v8a x86_64"` (space-separated) narrows a local build.
 - The version comes from `-Pmaplibre.versionName` (read in `buildSrc/.../maplibre.artifact-settings.gradle.kts`);
   publishing goes through the existing `publicationRepositoryUrl` path of `maplibre.gradle-publish.gradle.kts`,
