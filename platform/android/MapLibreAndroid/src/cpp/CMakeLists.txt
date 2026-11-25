@@ -162,7 +162,6 @@ add_library(maplibre SHARED
             ${PROJECT_SOURCE_DIR}/style/layers/custom_layer.cpp
             ${PROJECT_SOURCE_DIR}/style/layers/track_layer.cpp
             ${PROJECT_SOURCE_DIR}/style/layers/sky_layer.cpp
-            ${PROJECT_SOURCE_DIR}/style/layers/sky_layer_gl.cpp
             ${PROJECT_SOURCE_DIR}/style/layers/custom_layer.hpp
             ${PROJECT_SOURCE_DIR}/style/layers/fill_extrusion_layer.cpp
             ${PROJECT_SOURCE_DIR}/style/layers/fill_extrusion_layer.hpp
@@ -225,13 +224,15 @@ if(MLN_WITH_OPENGL)
 endif()
 
 if(NOT MLN_WITH_VULKAN)
-    target_sources(maplibre PRIVATE ${PROJECT_SOURCE_DIR}/style/layers/track_layer_gl.cpp)
+    target_sources(maplibre PRIVATE ${PROJECT_SOURCE_DIR}/style/layers/track_layer_gl.cpp
+            ${PROJECT_SOURCE_DIR}/style/layers/sky_layer_gl.cpp)
 endif()
 
 if(MLN_WITH_VULKAN)
     target_sources(
         maplibre PRIVATE
             ${PROJECT_SOURCE_DIR}/style/layers/track_layer_vulkan.cpp
+            ${PROJECT_SOURCE_DIR}/style/layers/sky_layer_vulkan.cpp
             ${PROJECT_SOURCE_DIR}/android_vulkan_renderer_backend.cpp
             ${PROJECT_SOURCE_DIR}/android_vulkan_renderer_backend.hpp
     )
