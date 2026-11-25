@@ -47,6 +47,7 @@ ExternalProject_Add(maplibre-vulkan-build
     CMAKE_ARGS
         ${_fwd}
         -DMLN_WITH_VULKAN=ON
+        -DMLN_VULKAN_VALIDATION=${MLN_VULKAN_VALIDATION}
         -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${_vk}/lib
     BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target maplibre
     INSTALL_COMMAND ""
