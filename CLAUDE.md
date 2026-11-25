@@ -24,7 +24,7 @@ here and pin the printed version in Cumbly's `gradle/libs.versions.toml` (`mapli
 ```bash
 cd platform/android
 scripts/publish-cumbly.sh local         # into ~/.m2/repository, to try a change in Cumbly
-scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (libs-release-local), for teammates and CI
+scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-native-local), for teammates and CI
 ```
 
 - Artifact `org.maplibre.gl:android-sdk-opengl` (`--flavor vulkan` gives `android-sdk-vulkan`), version
@@ -33,7 +33,7 @@ scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (libs-relea
 - The version comes from `-Pmaplibre.versionName` (read in `buildSrc/.../maplibre.artifact-settings.gradle.kts`);
   publishing goes through the existing `publicationRepositoryUrl` path of `maplibre.gradle-publish.gradle.kts`,
   which skips signing.
-- `artifactory` deploys to `https://artifactory.lunabee.studio/artifactory/libs-release-local` with
+- `artifactory` deploys to `https://artifactory.lunabee.studio/artifactory/maplibre-native-local` with
   `artifactory_deployer_release_username` / `artifactory_deployer_release_api_key` from `~/.gradle/gradle.properties`
   (or `ARTIFACTORY_DEPLOYER_USERNAME` / `ARTIFACTORY_DEPLOYER_API_KEY`). It refuses a version already there, so
   publish each commit once.

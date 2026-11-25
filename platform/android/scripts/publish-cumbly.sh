@@ -2,7 +2,7 @@
 # Publishes this fork's MapLibre Android AAR for the Cumbly app.
 #
 #   scripts/publish-cumbly.sh local         # into ~/.m2/repository (Maven Local)
-#   scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory, libs-release-local
+#   scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory, maplibre-native-local
 #
 # Options:
 #   --flavor opengl|vulkan   renderer flavor (default: opengl)
@@ -70,7 +70,7 @@ case "$target" in
         unset MAVEN_REPOSITORY_USERNAME MAVEN_REPOSITORY_PASSWORD
         ;;
     artifactory)
-        export MAVEN_REPOSITORY_URL="https://artifactory.lunabee.studio/artifactory/libs-release-local"
+        export MAVEN_REPOSITORY_URL="https://artifactory.lunabee.studio/artifactory/maplibre-native-local"
         MAVEN_REPOSITORY_USERNAME="${ARTIFACTORY_DEPLOYER_USERNAME:-$(gradle_property artifactory_deployer_release_username)}"
         MAVEN_REPOSITORY_PASSWORD="${ARTIFACTORY_DEPLOYER_API_KEY:-$(gradle_property artifactory_deployer_release_api_key)}"
         if [[ -z "$MAVEN_REPOSITORY_USERNAME" || -z "$MAVEN_REPOSITORY_PASSWORD" ]]; then
