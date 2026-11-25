@@ -177,7 +177,6 @@ public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
     }
 
     List<Config> matches = new ArrayList<>();
-    List<Config> multisampledMatches = new ArrayList<>();
 
     int i = 0;
     for (EGLConfig config : configs) {
@@ -199,10 +198,10 @@ public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
       int sampleBuffers = getConfigAttr(egl, display, config, EGL_SAMPLE_BUFFERS);
       int samples = getConfigAttr(egl, display, config, EGL_SAMPLES);
 
-      boolean multisampled = sampleBuffers == 1 && samples == 4;
       boolean configOk = (depth == 24) || (depth == 16);
       configOk &= stencil == 8;
-      configOk &= (sampleBuffers == 0 && samples == 0) || multisampled;
+      configOk &= sampleBuffers == 0;
+      configOk &= samples == 0;
 
       // Filter our configs first for depth, stencil and anti-aliasing
       if (configOk) {
@@ -232,16 +231,10 @@ public class EGLConfigChooser implements GLSurfaceView.EGLConfigChooser {
 
         // Ignore formats we don't recognise
         if (bufferFormat != BufferFormat.Unknown) {
-          (multisampled ? multisampledMatches : matches).add(
-            new Config(bufferFormat, depthStencilFormat, isCaveat, i, config));
+          matches.add(new Config(bufferFormat, depthStencilFormat, isCaveat, i, config));
         }
       }
 
-    }
-
-    Logger.i(TAG, String.format(MapLibreConstants.MAPLIBRE_LOCALE, "Multisampled configs: %d", multisampledMatches.size()));
-    if (!multisampledMatches.isEmpty()) {
-      matches = multisampledMatches;
     }
 
     // Sort
