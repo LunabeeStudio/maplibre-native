@@ -5,6 +5,8 @@
 
 #include <mln/util/logging.hpp>
 
+#include "custom_layer_common.hpp"
+
 #include <array>
 #include <cmath>
 #include <initializer_list>
@@ -12,8 +14,6 @@
 #include <string>
 
 namespace cumbly_gl {
-
-constexpr double kTileSize = 512.0;
 
 inline GLuint compile(const char* label, GLenum type, const char* source) {
     GLuint shader = glCreateShader(type);
@@ -59,20 +59,6 @@ inline GLuint link(const char* label,
         return 0;
     }
     return program;
-}
-
-inline double mercatorX(double longitude) {
-    return (longitude + 180.0) / 360.0;
-}
-
-inline double mercatorY(double latitude) {
-    const double radians = latitude * M_PI / 180.0;
-    return (1.0 - std::log(std::tan(radians) + 1.0 / std::cos(radians)) / M_PI) / 2.0;
-}
-
-template <typename State>
-std::shared_ptr<State>& handle(jlong state) {
-    return *reinterpret_cast<std::shared_ptr<State>*>(state);
 }
 
 } // namespace cumbly_gl
