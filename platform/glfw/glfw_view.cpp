@@ -45,6 +45,9 @@
 
 #if MLN_RENDER_BACKEND_VULKAN
 #include <mln/style/layers/custom_layer.hpp>
+#include <mln/style/layers/hillshade_layer.hpp>
+#include <mln/style/sources/raster_dem_source.hpp>
+#include <mln/style/terrain.hpp>
 
 #include "sky_layer_data.hpp"
 #include "track_layer_data.hpp"
@@ -334,7 +337,7 @@ GLFWView::GLFWView(bool fullscreen_,
     printf("- Press `N` to reset north\n");
     printf("- Press `R` to enable the route demo\n");
 #if MLN_RENDER_BACKEND_VULKAN
-    printf("- Press `V` to toggle the Android SkyLayer and TrackLayer on the New York route\n");
+    printf("- Press `V` to toggle 3D terrain with the Android SkyLayer and TrackLayer in the Bauges\n");
 #endif
     printf("- Press `E` to insert an example building extrusion layer\n");
     printf("- Press `O` to toggle online connectivity\n");
@@ -1460,11 +1463,16 @@ void GLFWView::toggleLocationIndicatorLayer() {
 void GLFWView::toggleSkyAndTrackLayers() {
     static const std::string skyId = "android-sky";
     static const std::string trackId = "android-track";
+    static const std::string demId = "glfw-terrain-dem";
+    static const std::string hillshadeId = "glfw-hillshade";
     auto &style = map->getStyle();
 
     if (style.getLayer(skyId)) {
         style.removeLayer(trackId);
+        style.removeLayer(hillshadeId);
         style.removeLayer(skyId);
+        style.setTerrain(nullptr);
+        style.removeSource(demId);
         map->setBounds(mln::BoundOptions().withMaxPitch(60));
         return;
     }
@@ -1474,41 +1482,85 @@ void GLFWView::toggleSkyAndTrackLayers() {
                                     static_cast<float>((color >> 8) & 0xFF) / 255.0f,
                                     static_cast<float>(color & 0xFF) / 255.0f};
     };
-    // Below every style layer: the map covers it, so it only shows above the horizon.
     const auto layers = style.getLayers();
+    // Below every style layer: the map covers it, so it only shows above the horizon.
     const std::optional<std::string> bottom = layers.empty() ? std::nullopt
                                                              : std::optional<std::string>(layers.front()->getID());
+    // Shading goes under the labels.
+    std::optional<std::string> firstSymbol;
+    for (const auto *layer : layers) {
+        if (std::string_view(layer->getTypeInfo()->type) == "symbol") {
+            firstSymbol = layer->getID();
+            break;
+        }
+    }
+
+    // Mapterhorn: worldwide terrarium DEM, 512 px tiles; the TileJSON gives encoding and bounds (see TERRAIN.md).
+    style.addSource(std::make_unique<mln::style::RasterDEMSource>(
+        demId, std::string("https://tiles.mapterhorn.com/tilejson.json"), 512));
+    style.setTerrain(std::make_unique<mln::style::Terrain>(demId, 1.0f));
+    style.addLayer(std::make_unique<mln::style::HillshadeLayer>(hillshadeId, demId), firstSymbol);
+
     style.addLayer(std::make_unique<mln::style::CustomLayer>(
                        skyId, cumbly_sky::createHost({rgb(0xDCE6F0), rgb(0x9CC3E6), rgb(0x3A6EA5), 8.0f, 45.0f})),
                    bottom);
 
-    static const mapbox::geojson::geojson route{mapbox::geojson::parse(mln::platform::glfw::route)};
-    const auto &line = route.get<mapbox::geometry::geometry<double>>().get<mapbox::geometry::line_string<double>>();
+    // A synthetic paraglider flight in the Bauges, altitudes in metres above sea level like a GPS track: a thermal
+    // climb by Mont Trélod, drifting east, then a glide down to Le Châtelard in the Chéran valley. Terrain exaggeration
+    // is 1, so the track's altitude scale stays 1 and it sits at its true height over the relief.
+    constexpr double centerLat = 45.715;
+    constexpr double centerLon = 6.195;
+    constexpr double metersPerDegreeLat = 111'320.0;
+    const double metersPerDegreeLon = metersPerDegreeLat * std::cos(centerLat * pi / 180.0);
+    constexpr size_t climbPoints = 400;
+    constexpr size_t glidePoints = 200;
+    constexpr double turns = 6.0;
+    constexpr double radius = 220.0;
+    constexpr double drift = 900.0;
+    constexpr double climbFrom = 2250.0;
+    constexpr double climbTo = 2850.0;
+    constexpr double landingLat = 45.686;
+    constexpr double landingLon = 6.137;
+    constexpr double landingAltitude = 760.0;
+
     std::vector<double> lonLatAltitudes;
     std::vector<uint32_t> colors;
-    lonLatAltitudes.reserve(line.size() * 3);
-    colors.reserve(line.size());
-    for (size_t i = 0; i < line.size(); ++i) {
-        // Green to red along the route, like a speed or slope colouring.
-        const double t = line.size() > 1 ? static_cast<double>(i) / static_cast<double>(line.size() - 1) : 0.0;
-        lonLatAltitudes.insert(lonLatAltitudes.end(), {line[i].x, line[i].y, 0.0});
-        colors.push_back(0xFF000000u | (static_cast<uint32_t>(255.0 * t) << 16) |
-                         (static_cast<uint32_t>(255.0 * (1.0 - t)) << 8) | 0x30u);
+    lonLatAltitudes.reserve((climbPoints + glidePoints) * 3);
+    colors.reserve(climbPoints + glidePoints);
+    for (size_t i = 0; i < climbPoints; ++i) {
+        const double t = static_cast<double>(i) / static_cast<double>(climbPoints - 1);
+        const double angle = 2.0 * pi * turns * t;
+        const double east = radius * std::cos(angle) + drift * t;
+        const double north = radius * std::sin(angle);
+        lonLatAltitudes.insert(lonLatAltitudes.end(),
+                               {centerLon + east / metersPerDegreeLon,
+                                centerLat + north / metersPerDegreeLat,
+                                climbFrom + (climbTo - climbFrom) * t});
+        colors.push_back(0xFF30C040u); // climbing: green
     }
+    const double topLon = lonLatAltitudes[(climbPoints - 1) * 3];
+    const double topLat = lonLatAltitudes[(climbPoints - 1) * 3 + 1];
+    for (size_t i = 1; i <= glidePoints; ++i) {
+        const double t = static_cast<double>(i) / static_cast<double>(glidePoints);
+        lonLatAltitudes.insert(lonLatAltitudes.end(),
+                               {topLon + (landingLon - topLon) * t,
+                                topLat + (landingLat - topLat) * t,
+                                // Sinks slowly first, so it clears the ridges between Trélod and the Chéran.
+                                climbTo + (landingAltitude - climbTo) * t * t});
+        colors.push_back(0xFF000000u | (static_cast<uint32_t>(255.0 * t) << 16) |
+                         (static_cast<uint32_t>(160.0 * (1.0 - t)) << 8) | 0x30u); // gliding: towards red
+    }
+    const size_t count = colors.size();
     auto track = std::make_shared<cumbly_track::TrackData>();
     track->halfWidth = 3.0f;
-    cumbly_track::setTrack(*track, lonLatAltitudes.data(), colors.data(), line.size());
-    const auto &middle = line[line.size() / 2];
-    cumbly_track::setCursor(*track, middle.x, middle.y, 0.0);
+    cumbly_track::setTrack(*track, lonLatAltitudes.data(), colors.data(), count);
+    cumbly_track::setCursor(*track, topLon, topLat, climbTo);
     style.addLayer(std::make_unique<mln::style::CustomLayer>(trackId, cumbly_track::createHost(std::move(track))));
 
     // The sky needs a pitch past the default 60 degree limit to reach the horizon.
     map->setBounds(mln::BoundOptions().withMaxPitch(85));
-    map->jumpTo(mln::CameraOptions()
-                    .withCenter(mln::LatLng{middle.y, middle.x})
-                    .withZoom(15.0)
-                    .withBearing(30.0)
-                    .withPitch(80.0));
+    map->jumpTo(
+        mln::CameraOptions().withCenter(mln::LatLng{45.70, 6.18}).withZoom(12.0).withBearing(325.0).withPitch(75.0));
 }
 #endif
 

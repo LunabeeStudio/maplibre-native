@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+self=$0
+while [ -L "$self" ]; do
+    link=$(readlink "$self")
+    case $link in
+        /*) self=$link ;;
+        *) self=$(dirname "$self")/$link ;;
+    esac
+done
+root=$(cd "$(dirname "$self")/../.." && pwd)
+
+command -v uv >/dev/null 2>&1 || {
+    echo "uv not found: brew install uv" >&2
+    exit 1
+}
+exec uv run --quiet --project "$root/tools/cli" mln "$@"
