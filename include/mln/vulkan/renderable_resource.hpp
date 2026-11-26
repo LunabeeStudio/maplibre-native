@@ -29,6 +29,9 @@ public:
     virtual const vk::UniqueFramebuffer& getFramebuffer() const = 0;
     virtual float getRotation() const { return 0.0f; }
 
+    /// Sample count of the render pass attachments, pipelines drawn into it must match.
+    virtual vk::SampleCountFlagBits getSampleCount() const { return vk::SampleCountFlagBits::e1; }
+
     /// Whether this render pass has a stencil attachment. Offscreen render targets
     /// (e.g. the terrain drape RTT) have a depth attachment but no stencil, matching
     /// maplibre-gl-js's drape framebuffer, so pipelines rendered into them must not
@@ -64,9 +67,12 @@ protected:
     void initSwapchain(uint32_t w, uint32_t h);
 
     void initDepthStencil();
+    void initMultisampleColor();
     void initRenderPass();
     void setColorFormat(vk::Format format);
     void setDepthFormat(vk::Format format);
+    void setSampleCount(vk::SampleCountFlagBits count);
+    vk::SampleCountFlagBits selectSampleCount() const;
 
     void copySurfaceToReadTexture();
 
@@ -81,6 +87,7 @@ public:
     const vk::UniqueSwapchainKHR& getSwapchain() const { return swapchain; }
     const vk::UniqueFramebuffer& getFramebuffer() const override { return swapchainFramebuffers[acquiredImageIndex]; }
     vk::Format getColorFormat() const { return colorFormat; }
+    vk::SampleCountFlagBits getSampleCount() const override { return sampleCount; }
 
     uint32_t getImageCount() const { return static_cast<uint32_t>(swapchainFramebuffers.size()); };
     uint32_t getAcquiredImageIndex() const { return acquiredImageIndex; };
@@ -129,6 +136,11 @@ protected:
 
     UniqueImageAllocation depthAllocation;
     vk::Format depthFormat{vk::Format::eUndefined};
+
+    // multisampled colour target resolved into the swapchain image, unused with one sample
+    UniqueImageAllocation msaaColorAllocation;
+    vk::SampleCountFlagBits sampleCount{vk::SampleCountFlagBits::e1};
+    bool multisampleFailed{false};
 
     int32_t surfaceTransformPollingInterval{-1};
     bool surfaceRead{false};

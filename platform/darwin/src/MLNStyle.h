@@ -327,7 +327,8 @@ MLN_EXPORT
  */
 @property (nonatomic, nullable, copy) MLNTerrain *terrain;
 
-- (void)setTerrainWithSourceIdentifier:(nullable NSString *)sourceIdentifier exaggeration:(CGFloat)exaggeration;
+- (void)setTerrainWithSourceIdentifier:(nullable NSString *)sourceIdentifier
+                          exaggeration:(CGFloat)exaggeration;
 
 // MARK: Localizing Map Content
 

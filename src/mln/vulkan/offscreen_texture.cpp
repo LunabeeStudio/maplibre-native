@@ -40,9 +40,14 @@ public:
     }
 
     ~OffscreenTextureResource() noexcept override {
-        framebuffer.reset();
-        renderPass.reset();
-        depthAllocation.reset();
+        backend.getContext<Context>().enqueueDeletion(
+            [oldFramebuffer = std::make_shared<vk::UniqueFramebuffer>(std::move(framebuffer)),
+             oldRenderPass = std::make_shared<vk::UniqueRenderPass>(std::move(renderPass)),
+             oldDepth = std::shared_ptr<ImageAllocation>(std::move(depthAllocation))](auto&) mutable {
+                oldFramebuffer = nullptr;
+                oldRenderPass = nullptr;
+                oldDepth.reset();
+            });
         colorTexture.reset();
 
         backend.getContext().renderingStats().numFrameBuffers--;

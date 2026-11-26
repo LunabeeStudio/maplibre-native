@@ -46,9 +46,20 @@ if(MLN_WITH_EGL)
 endif()
 
 if(MLN_WITH_VULKAN)
+    # The Android SkyLayer and TrackLayer hosts are plain Vulkan code: the `V` key adds them here, so they can be
+    # tried on the desktop. Only their JNI glue stays Android-only.
+    set(MLN_ANDROID_LAYERS_DIR ${PROJECT_SOURCE_DIR}/platform/android/MapLibreAndroid/src/cpp/style/layers)
     target_sources(
         mbgl-glfw
-        PRIVATE ${PROJECT_SOURCE_DIR}/platform/glfw/glfw_vulkan_backend.cpp
+        PRIVATE
+            ${PROJECT_SOURCE_DIR}/platform/glfw/glfw_vulkan_backend.cpp
+            ${MLN_ANDROID_LAYERS_DIR}/sky_layer_vulkan.cpp
+            ${MLN_ANDROID_LAYERS_DIR}/track_layer_data.cpp
+            ${MLN_ANDROID_LAYERS_DIR}/track_layer_vulkan.cpp
+    )
+    target_include_directories(
+        mbgl-glfw
+        PRIVATE ${MLN_ANDROID_LAYERS_DIR}
     )
 endif()
 

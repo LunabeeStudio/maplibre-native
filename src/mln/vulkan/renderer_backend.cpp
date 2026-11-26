@@ -142,13 +142,7 @@ std::vector<const char*> RendererBackend::getInstanceExtensions() {
 }
 
 std::vector<const char*> RendererBackend::getDeviceExtensions() {
-    auto extensions = getDefaultRenderable().getResource<SurfaceRenderableResource>().getDeviceExtensions();
-
-#ifdef __APPLE__
-    extensions.push_back("VK_KHR_portability_subset");
-#endif
-
-    return extensions;
+    return getDefaultRenderable().getResource<SurfaceRenderableResource>().getDeviceExtensions();
 }
 
 std::vector<const char*> RendererBackend::getDebugExtensions() {
@@ -510,7 +504,7 @@ void RendererBackend::initAllocator() {
 }
 
 void RendererBackend::initDevice() {
-    const auto& extensions = getDeviceExtensions();
+    auto extensions = getDeviceExtensions();
     const auto& surface = getDefaultRenderable().getResource<SurfaceRenderableResource>().getPlatformSurface().get();
 
     const auto& isPhysicalDeviceCompatible = [&](const vk::PhysicalDevice& candidate) -> bool {
@@ -565,6 +559,15 @@ void RendererBackend::initDevice() {
     };
 
     pickPhysicalDevice();
+
+    // A portability driver such as MoltenVK exposes VK_KHR_portability_subset, and the spec then requires enabling
+    // it (VUID-VkDeviceCreateInfo-pProperties-04451). A conformant driver such as KosmicKrisp does not expose it.
+    constexpr const char* portabilitySubset = "VK_KHR_portability_subset";
+    if (checkAvailability(physicalDevice.enumerateDeviceExtensionProperties(nullptr, dispatcher),
+                          {portabilitySubset},
+                          [](const vk::ExtensionProperties& value) { return value.extensionName.data(); })) {
+        extensions.push_back(portabilitySubset);
+    }
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
 

@@ -25,9 +25,10 @@ here and pin the printed version in Cumbly's `gradle/libs.versions.toml` (`mapli
 cd platform/android
 scripts/publish-cumbly.sh local         # into ~/.m2/repository, to try a change in Cumbly
 scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-native-local), for teammates and CI
+# both default to --flavor vulkan
 ```
 
-- Artifact `org.maplibre.gl:android-sdk-opengl` (`--flavor vulkan` gives `android-sdk-vulkan`), version
+- Artifact `org.maplibre.gl:android-sdk-vulkan` (`--flavor opengl` gives `android-sdk-opengl`, which no longer carries TrackLayer / SkyLayer), version
   `<platform/android/VERSION>-cumbly-<HEAD committer time, Unix seconds>-<short HEAD sha>`, e.g.
   `13.7.1-cumbly-1795615450-608efb0`, so versions sort by commit time. A local build of a dirty tree
   gets `-dirty`; `artifactory` refuses one. `--abis "arm64-v8a x86_64"` (space-separated) narrows a local build.
@@ -47,15 +48,25 @@ and `-ios-` patches kept in Cumbly, runs `bazel build //platform/ios:MapLibre.dy
 --//:renderer=metal` and commits the XCFramework under `Cumbly_iOS/maplibre-terrain/`. iOS changes made here must
 still be mirrored as patches there until iOS moves to this repo too.
 
-The Cumbly app ships the **OpenGL** flavor today, so several Android changes are GL-only and are the main work for a
-Vulkan port:
+The Cumbly app ships the **Vulkan** flavor (`android-sdk-vulkan`). The Android changes that moved to Vulkan, on top of
+the upstream terrain branch:
 
-- `TrackLayer` / `SkyLayer` (`platform/android/MapLibreAndroid/src/cpp/style/layers/{track,sky}_layer.cpp`) draw with
-  raw GLES3 through `custom_layer_gl.hpp` (namespace `cumbly_gl`). They are listed unconditionally in
-  `platform/android/MapLibreAndroid/src/cpp/CMakeLists.txt`, not under `if(MLN_WITH_OPENGL)`.
-- `EGLConfigChooser` 4x MSAA preference and "discard stale GL errors" are GL-path only.
-- `aa97643842fc` (custom layers in the terrain's 3D depth range) and `e49c000c0798` (768 px drape targets) are core
-  changes and apply to every backend.
+- `TrackLayer` / `SkyLayer` (`platform/android/MapLibreAndroid/src/cpp/style/layers/`) are raw Vulkan custom layers:
+  `{track,sky}_layer.cpp` keep the JNI entry points and state, `{track,sky}_layer_vulkan.cpp` the hosts, and
+  `custom_layer_vk.hpp` the shared helpers (run-time GLSL 450 compile with glslang, host-visible buffers, pipeline per
+  render pass and sample count, deferred destruction). They are built under `MLN_WITH_VULKAN` only; on the other
+  flavors the Java classes exist and calling them throws `UnsatisfiedLinkError`. The earlier GLES3 hosts are deleted.
+- The surface render pass is multisampled 4x (colour and depth/stencil, colour resolved into the swapchain image),
+  falling back to 1 sample when the device lacks 4x for those formats. Headless output and offscreen passes stay 1
+  sample; the sample count is part of the pipeline hash.
+- `style::vulkan::CustomLayerRenderParameters` also carries `sampleCount`, `extent` (pixels) and `minDepth` /
+  `maxDepth` (the terrain depth range of the viewport).
+- A descriptor set that was already bound in the frame's command buffer is retired and replaced before it is written
+  (the layer reported "updated without UPDATE_AFTER_BIND" every frame), and offscreen target framebuffers and render
+  passes are destroyed through the frame deletion queue.
+- History: the GL-only changes (4x MSAA `EGLConfigChooser`, "discard stale GL errors") were reverted, and the GLES3
+  custom layer hosts deleted, when Cumbly moved to Vulkan. `aa97643842fc` (custom layers in the terrain's 3D depth
+  range) and `e49c000c0798` (768 px drape targets) are core changes and apply to every backend.
 
 ## Terrain docs
 
@@ -66,11 +77,12 @@ Vulkan port:
 
 ## Vulkan work
 
-Delegate Vulkan backend work to the `vulkan-engineer` agent (`.claude/agents/`): it carries the backend map and the
-conventions that differ from GL. Three skills in `.claude/skills/` give it evidence instead of recall:
+Vulkan backend work uses the user-level tools, not files in this repo: the `vulkan-engineer` agent
+(`~/.claude/agents/vulkan-engineer.md`) carries the backend map and the conventions that differ from GL, and three
+skills (`~/.claude/skills/`) give it evidence instead of recall:
 
-- `vulkan-spec-lookup`: `scripts/vk-lookup.py <name-or-VUID>` reads the vendored registry. The backend is Vulkan
-  **1.0**; the script flags anything newer.
+- `vulkan-spec-lookup`: `vk-lookup.py <name-or-VUID>` reads the vendored registry (`vendor/Vulkan-Headers`); it finds
+  the fork from the git top level, or from `MLN_REPO`. The backend is Vulkan **1.0**; the script flags anything newer.
 - `vulkan-validate`: build with the validation layer and read VUIDs from the device. Validation is off by default
   on Android; `-Pmaplibre.vulkanValidation=true` (CMake `-DMLN_VULKAN_VALIDATION=ON`) turns it on.
 - `vulkan-capture`: screenshots, GFXReconstruct traces and call logs for a frame that is wrong while validation is
@@ -78,8 +90,6 @@ conventions that differ from GL. Three skills in `.claude/skills/` give it evide
 
 `scripts/vulkan-doctor.sh` lists the host tools that are missing; `--fix` installs the ones that can be scripted
 (submodules, `sdkmanager` packages, Homebrew formulae).
-
-An optional third-party registry server (`mcp-Vulkan`) can be added per person: see `vulkan-spec-lookup`.
 
 ## Commands
 

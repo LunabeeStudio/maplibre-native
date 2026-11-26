@@ -24,16 +24,30 @@ DescriptorSet::~DescriptorSet() {
         return;
     }
 
-    context.enqueueDeletion(
-        [type_ = type, poolIndex = descriptorPoolIndex, sets = std::move(descriptorSets)](auto& context_) mutable {
-            auto& poolInfo = context_.getDescriptorPool(type_).pools[poolIndex];
+    retire(std::move(descriptorSets), descriptorPoolIndex);
+}
+
+void DescriptorSet::retire(std::vector<vk::DescriptorSet>&& sets, int32_t poolIndex) {
+    context.enqueueDeletion([type_ = type, poolIndex, sets_ = std::move(sets)](auto& context_) mutable {
+        auto& poolInfo = context_.getDescriptorPool(type_).pools[poolIndex];
 #ifdef USE_DESCRIPTOR_POOL_RESET
-            poolInfo.unusedSets.push(std::move(sets));
+        poolInfo.unusedSets.push(std::move(sets_));
 #else
-            context_.getBackend().getDevice()->freeDescriptorSets(poolInfo.pool.get(), sets);
-            poolInfo.remainingSets += sets.size();
+        context_.getBackend().getDevice()->freeDescriptorSets(poolInfo.pool.get(), sets_);
+        poolInfo.remainingSets += sets_.size();
 #endif
-        });
+    });
+}
+
+void DescriptorSet::renewIfBoundThisFrame() {
+    if (descriptorSets.empty() || boundFrameSerial != context.getFrameSerial() + 1) {
+        return;
+    }
+
+    retire(std::move(descriptorSets), descriptorPoolIndex);
+    descriptorSets.clear();
+    descriptorPoolIndex = -1;
+    allocate();
 }
 
 void DescriptorSet::createDescriptorPool(DescriptorPoolGrowable& growablePool) {
@@ -134,6 +148,7 @@ void DescriptorSet::bind(CommandEncoder& encoder) {
     auto& commandBuffer = encoder.getCommandBuffer();
 
     const uint8_t index = context.getCurrentFrameResourceIndex();
+    boundFrameSerial = context.getFrameSerial() + 1;
 
     commandBuffer->bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                       context.getGeneralPipelineLayout().get(),
@@ -158,6 +173,8 @@ void UniformDescriptorSet::update(const gfx::UniformBufferArray& uniforms,
     if (!dirty[frameIndex]) {
         return;
     }
+
+    renewIfBoundThisFrame();
 
     const auto& backend = context.getBackend();
     const auto& device = backend.getDevice();
@@ -210,6 +227,8 @@ void ImageDescriptorSet::update(const std::array<gfx::Texture2DPtr, shaders::max
     if (!dirty[frameIndex]) {
         return;
     }
+
+    renewIfBoundThisFrame();
 
     const auto& backend = context.getBackend();
     const auto& device = backend.getDevice();

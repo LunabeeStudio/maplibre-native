@@ -557,8 +557,5 @@ extern void (*const glGetInternalformativ)(GLenum, GLenum, GLenum, GLsizei, GLin
 void glCheckError(const char* cmd, const char* file, int line);
 #endif
 
-/// Drop the errors earlier calls left pending, so the next glGetError() only reports what follows.
-void glDiscardPendingErrors();
-
 } // namespace platform
 } // namespace mln

@@ -20,6 +20,17 @@ struct CustomLayerRenderParameters : mln::style::CustomLayerRenderParameters {
     /// Compatible render pass handle — use when creating VkPipeline.
     vk::RenderPass renderPass;
 
+    /// Sample count of the render pass attachments — use as rasterizationSamples when creating VkPipeline.
+    vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
+
+    /// Size in pixels of the render target the layer draws into — use for the viewport and scissor.
+    vk::Extent2D extent;
+
+    /// Viewport depth range the terrain mesh is drawn with — use as minDepth and maxDepth of the viewport so that
+    /// a layer that tests against the terrain's depth lands in the same range.
+    float minDepth = 0.0f;
+    float maxDepth = 1.0f;
+
     /// Active command buffer for the current render pass — record all draw calls here.
     vk::CommandBuffer commandBuffer;
 

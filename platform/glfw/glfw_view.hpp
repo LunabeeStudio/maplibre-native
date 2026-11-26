@@ -107,6 +107,9 @@ private:
     void updateAnimatedAnnotations();
     void toggleCustomSource();
     void toggleLocationIndicatorLayer();
+#if MLN_RENDER_BACKEND_VULKAN
+    void toggleSkyAndTrackLayers();
+#endif
 
     void cycleDebugOptions();
     void clearAnnotations();

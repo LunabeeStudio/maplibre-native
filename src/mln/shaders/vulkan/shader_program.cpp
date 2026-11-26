@@ -158,7 +158,7 @@ const vk::UniquePipeline& ShaderProgram::getPipeline(const PipelineInfo& pipelin
                                  .setLineWidth(1.0f);
 
     const auto multisampleState = vk::PipelineMultisampleStateCreateInfo().setRasterizationSamples(
-        vk::SampleCountFlagBits::e1);
+        pipelineInfo.sampleCount);
 
     const auto stencilState = vk::StencilOpState()
                                   .setCompareOp(pipelineInfo.stencilFunction)
