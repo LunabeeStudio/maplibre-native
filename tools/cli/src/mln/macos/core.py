@@ -110,7 +110,7 @@ def run_notes(backend: Backend, driver: str, env: Mapping[str, str]) -> list[str
     notes = []
     if backend.key == "vulkan":
         notes.append(f"Vulkan driver: {driver}")
-        notes.append("press V in the window to add the SkyLayer and TrackLayer")
+        notes.append("press V in the window for 3D terrain with the SkyLayer and TrackLayer")
     if not env.get(API_KEY_ENV):
         notes.append(f"{API_KEY_ENV} is not set: MapTiler styles will not load")
     return notes
