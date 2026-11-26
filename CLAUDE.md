@@ -10,8 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 It is built from two layers:
 
-1. **Upstream `feature/terrain-3d`** (the 3D terrain work, not yet in upstream `main`), at the commit Cumbly pins:
-   `2ef164d154f0`. Everything below that commit is upstream history.
+1. **Upstream `feature/terrain-3d`** (the 3D terrain work, not yet in upstream `main`), merged into
+   `cumbly` as upstream moves. Everything reachable from `origin/feature/terrain-3d` is upstream history.
 2. **Cumbly changes**, one commit each, first ported from Cumbly's `tools/cli/patches/maplibre/NNNN-*.patch`. Each
    commit body says `Cumbly patch NNNN-<name>.patch.` Names containing `-android-` or `-ios-` concern that platform
    only; the rest are shared core changes.
@@ -43,7 +43,7 @@ scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-n
   consumer credentials every Lunabee machine and TeamCity already have.
 - Requires NDK `28.2.13676358` and SDK CMake 3.x (`sdkmanager "ndk;28.2.13676358" "cmake;3.31.6"`).
 
-**iOS: still built by Cumbly.** Its CLI (`./cumbly ios maplibre`) checks out upstream at `2ef164d`, applies the shared
+**iOS: still built by Cumbly.** Its CLI (`./cumbly ios maplibre`) checks out the upstream commit it pins, applies the shared
 and `-ios-` patches kept in Cumbly, runs `bazel build //platform/ios:MapLibre.dynamic --compilation_mode=opt
 --//:renderer=metal` and commits the XCFramework under `Cumbly_iOS/maplibre-terrain/`. iOS changes made here must
 still be mirrored as patches there until iOS moves to this repo too.
