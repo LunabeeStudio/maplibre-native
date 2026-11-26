@@ -337,7 +337,7 @@ GLFWView::GLFWView(bool fullscreen_,
     printf("- Press `N` to reset north\n");
     printf("- Press `R` to enable the route demo\n");
 #if MLN_RENDER_BACKEND_VULKAN
-    printf("- Press `V` to toggle 3D terrain with the Android SkyLayer and TrackLayer above Innsbruck\n");
+    printf("- Press `V` to toggle 3D terrain with the Android SkyLayer and TrackLayer in the Bauges\n");
 #endif
     printf("- Press `E` to insert an example building extrusion layer\n");
     printf("- Press `O` to toggle online connectivity\n");
@@ -1505,11 +1505,11 @@ void GLFWView::toggleSkyAndTrackLayers() {
                        skyId, cumbly_sky::createHost({rgb(0xDCE6F0), rgb(0x9CC3E6), rgb(0x3A6EA5), 8.0f, 45.0f})),
                    bottom);
 
-    // A synthetic paraglider flight, altitudes in metres above sea level like a GPS track: a thermal climb above
-    // Patscherkofel, drifting east, then a glide down to the Inn valley. Terrain exaggeration is 1, so the track's
-    // altitude scale stays 1 and it sits at its true height over the relief.
-    constexpr double centerLat = 47.205;
-    constexpr double centerLon = 11.455;
+    // A synthetic paraglider flight in the Bauges, altitudes in metres above sea level like a GPS track: a thermal
+    // climb by Mont Trélod, drifting east, then a glide down to Le Châtelard in the Chéran valley. Terrain exaggeration
+    // is 1, so the track's altitude scale stays 1 and it sits at its true height over the relief.
+    constexpr double centerLat = 45.715;
+    constexpr double centerLon = 6.195;
     constexpr double metersPerDegreeLat = 111'320.0;
     const double metersPerDegreeLon = metersPerDegreeLat * std::cos(centerLat * pi / 180.0);
     constexpr size_t climbPoints = 400;
@@ -1517,11 +1517,11 @@ void GLFWView::toggleSkyAndTrackLayers() {
     constexpr double turns = 6.0;
     constexpr double radius = 220.0;
     constexpr double drift = 900.0;
-    constexpr double climbFrom = 2100.0;
-    constexpr double climbTo = 2900.0;
-    constexpr double landingLat = 47.262;
-    constexpr double landingLon = 11.392;
-    constexpr double landingAltitude = 620.0;
+    constexpr double climbFrom = 2250.0;
+    constexpr double climbTo = 2850.0;
+    constexpr double landingLat = 45.686;
+    constexpr double landingLon = 6.137;
+    constexpr double landingAltitude = 760.0;
 
     std::vector<double> lonLatAltitudes;
     std::vector<uint32_t> colors;
@@ -1545,7 +1545,8 @@ void GLFWView::toggleSkyAndTrackLayers() {
         lonLatAltitudes.insert(lonLatAltitudes.end(),
                                {topLon + (landingLon - topLon) * t,
                                 topLat + (landingLat - topLat) * t,
-                                climbTo + (landingAltitude - climbTo) * t});
+                                // Sinks slowly first, so it clears the ridges between Trélod and the Chéran.
+                                climbTo + (landingAltitude - climbTo) * t * t});
         colors.push_back(0xFF000000u | (static_cast<uint32_t>(255.0 * t) << 16) |
                          (static_cast<uint32_t>(160.0 * (1.0 - t)) << 8) | 0x30u); // gliding: towards red
     }
@@ -1559,7 +1560,7 @@ void GLFWView::toggleSkyAndTrackLayers() {
     // The sky needs a pitch past the default 60 degree limit to reach the horizon.
     map->setBounds(mln::BoundOptions().withMaxPitch(85));
     map->jumpTo(
-        mln::CameraOptions().withCenter(mln::LatLng{47.225, 11.43}).withZoom(12.0).withBearing(300.0).withPitch(75.0));
+        mln::CameraOptions().withCenter(mln::LatLng{45.70, 6.18}).withZoom(12.0).withBearing(325.0).withPitch(75.0));
 }
 #endif
 
