@@ -188,3 +188,11 @@ manifests are `metrics/*.json` (per platform/backend, e.g. `android-vulkan-rende
 - Commit subjects are `area: lowercase summary` (`core:`, `android:`, `ios:`, `test:`, `docs:`, `vulkan:`, ...).
 - Keep each Cumbly patch as its own commit, so the branch can be exported back to Cumbly's patch files.
 - Upstream (`CONTRIBUTING.md`) asks for disclosure of AI assistance in PRs sent to maplibre/maplibre-native.
+
+<!-- lb-board -->
+## Board
+
+Tickets live on a Plane board. Before you work on a ticket or open a pull request, read
+[.lunabee/board/BOARD.md](.lunabee/board/BOARD.md) and follow it: name the ticket key (`CUM-12`) in the branch or
+PR title, claim the ticket before changing it, never move a card yourself.
+<!-- /lb-board -->
