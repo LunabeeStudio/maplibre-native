@@ -97,6 +97,17 @@ skills (`~/.claude/skills/`) give it evidence instead of recall:
 `scripts/vulkan-doctor.sh` lists the host tools that are missing; `--fix` installs the ones that can be scripted
 (submodules, `sdkmanager` packages, Homebrew formulae).
 
+## Metal work
+
+Metal backend work (iOS, macOS) has the same set of user-level tools: the `metal-engineer` agent
+(`~/.claude/agents/metal-engineer.md`) and three skills:
+
+- `metal-spec-lookup`: `mtl-lookup.py <ObjC or MTL:: name>` reads the SDK headers, the vendored metal-cpp, the MSL
+  stdlib headers and Apple's MSL spec and feature set tables, and flags APIs newer than iOS 16.0 / macOS 14.3.
+- `metal-validate`: `msl-check.py` compiles every Metal shader offline as the runtime assembles it (MSL 2.4), then
+  API and shader validation (`MTL_DEBUG_LAYER`, `MTL_SHADER_VALIDATION`) on the macOS render tests or iOS.
+- `metal-capture`: GPU traces with `gpucapture` and `gpudebug` (macOS 27), read as text and PNGs.
+
 ## Commands
 
 ### Android (`cd platform/android`)
