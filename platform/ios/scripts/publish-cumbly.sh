@@ -90,15 +90,6 @@ if [[ "$target" == "release" ]]; then
     fi
 fi
 
-ry" 2>&1)"; then
-        echo "${tag} already exists: commit something new to release again" >&2
-        exit 1
-    elif [[ "$view" != *"release not found"* ]]; then
-        echo "cannot check whether ${tag} exists: ${view}" >&2
-        exit 1
-    fi
-fi
-
 command -v bazelisk > /dev/null || { echo "bazelisk missing: brew install bazelisk" >&2; exit 1; }
 config="${root}/platform/darwin/bazel/config.bzl"
 [[ -f "$config" ]] || cp "${root}/platform/darwin/bazel/example_config.bzl" "$config"
@@ -132,12 +123,16 @@ checksum="$(shasum -a 256 "$zip_path" | cut -d ' ' -f 1)"
 printf '%s\n' "$checksum" > "${zip_path}.sha256"
 
 flags=()
-[[ "$prerelease" == true ]] && flags+=(--prerelease)
+notes="MapLibre Native iOS XCFramework (Metal, arm64 device and arm64 simulator, iOS 16+) built from commit ${sha} of the cumbly branch, for the Cumbly app."
+if [[ "$prerelease" == true ]]; then
+    flags+=(--prerelease)
+    notes="Pre-release of MapLibre Native iOS XCFramework (Metal, arm64 device and arm64 simulator, iOS 16+) built from commit ${sha}, not necessarily on the cumbly branch, for the Cumbly app."
+fi
 gh release create "$tag" "$zip_path" "${zip_path}.sha256" \
     --repo "$repository" \
     --target "$(git rev-parse HEAD)" \
     --title "MapLibre iOS ${version}" \
-    --notes "MapLibre Native iOS XCFramework (Metal, arm64 device and arm64 simulator, iOS 16+) built from commit ${sha} of the cumbly branch, for the Cumbly app." \
+    --notes "$notes" \
     ${flags[@]+"${flags[@]}"}
 
 echo
