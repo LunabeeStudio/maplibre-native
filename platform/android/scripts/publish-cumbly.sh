@@ -7,6 +7,7 @@
 # Options:
 #   --flavor opengl|vulkan   renderer flavor (default: vulkan)
 #   --abis "<list>"          space-separated ABIs, e.g. "arm64-v8a x86_64", or "all" (default: all)
+#   --print-version          print the version a local publish would get, and exit
 #
 # The version is `<platform/android/VERSION>-cumbly-<HEAD commit time, Unix seconds>-<short HEAD sha>`,
 # e.g. `13.7.1-cumbly-1795615450-608efb0`, so versions of one VERSION sort by commit time
@@ -20,24 +21,26 @@
 set -euo pipefail
 
 usage() {
-    sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
 target=""
 flavor="vulkan"
 abis="all"
+print_version=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         local | artifactory) target="$1" ;;
         --flavor) flavor="${2:?--flavor needs a value}"; shift ;;
         --abis) abis="${2:?--abis needs a value}"; shift ;;
+        --print-version) print_version=true ;;
         -h | --help) usage 0 ;;
         *) echo "unknown argument: $1" >&2; usage 1 ;;
     esac
     shift
 done
-[[ -n "$target" ]] || usage 1
+[[ -n "$target" || "$print_version" == true ]] || usage 1
 
 case "$flavor" in
     opengl) publication="Openglrelease" ;;
@@ -66,6 +69,10 @@ if [[ -n "$(git status --porcelain --untracked-files=no -- "$(git rev-parse --sh
         exit 1
     fi
     version="${version}-dirty"
+fi
+if [[ "$print_version" == true ]]; then
+    echo "$version"
+    exit 0
 fi
 
 case "$target" in
