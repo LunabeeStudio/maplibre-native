@@ -63,7 +63,7 @@ sha="$(git rev-parse --short=7 HEAD)"
 # committer time, so a rebased commit still sorts after everything published before it.
 timestamp="$(git log -1 --format=%ct HEAD)"
 version="$(tr -d '[:space:]' < VERSION)-cumbly-${timestamp}-${sha}"
-if [[ -n "$(git status --porcelain --untracked-files=no -- "$(git rev-parse --show-toplevel)")" ]]; then
+if [[ -n "$(git --no-optional-locks status --porcelain --untracked-files=no -- "$(git rev-parse --show-toplevel)")" ]]; then
     if [[ "$target" == "artifactory" ]]; then
         echo "uncommitted changes: commit them first, so the published version maps to a commit" >&2
         exit 1
