@@ -20,7 +20,7 @@
 set -euo pipefail
 
 usage() {
-    sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+    awk 'NR > 1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "$0"
     exit "${1:-0}"
 }
 
