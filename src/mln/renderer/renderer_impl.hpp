@@ -62,17 +62,14 @@ private:
     /// baked content that suppresses drape flicker. A tile's target is replaced only
     /// when the tile needs the other of the two sizes (TexturePool::createRenderTargets), or
     /// after it failed to allocate (TexturePool::renderTargetFailed).
-    // Drape target resolution = base tile size x qualityFactor. maplibre-gl-js renders
-    // its render-to-texture tiles at tileSize * qualityFactor (qualityFactor = 2, i.e.
-    // 1024x1024) precisely so draped content - thin lines especially - is not pixelated
-    // or aliased when the terrain mesh magnifies it onto the screen. Its own words
-    // (src/render/terrain.ts): "to not see pixels in the render-to-texture tiles it is
-    // good to render them bigger ... a value of 2 should be fine". At 512 (qualityFactor
-    // 1) draped roads look aliased because the line AA band, sized to the screen's device
-    // pixel ratio, falls sub-texel in the lower-resolution target. Lower drapeQualityFactor
-    // back to 1 to save GPU memory on constrained devices (each step is 4x memory/target).
-    // Only the tiles nearest the camera get that full size (RenderTerrain::fullSizeDrapeTilesOf);
-    // every other tile's target is drapeTileSize, a quarter of the memory.
+    // Drape target resolution. Draped content - thin lines especially - looks pixelated or aliased when the
+    // terrain mesh magnifies a 512 px target onto the screen: the line AA band, sized to the screen's device
+    // pixel ratio, falls sub-texel in a lower-resolution target (maplibre-gl-js renders its render-to-texture
+    // tiles at tileSize * 2 for this reason). Only the tiles nearest the camera, where the ground is magnified
+    // most, get the larger drapeTargetSize (768 px, not 1024: 1024 px cost ~9 MB per target with its stencil
+    // and ran older phones out of GPU memory); every other tile's target is drapeTileSize, with mips:
+    // ~44 % of a 768 px target's memory (512^2 / 768^2), ~59 % counting the mips.
+    // RenderTerrain::drapeSizesFor decides which tiles are which.
     static constexpr uint32_t drapeTileSize = 512;
     static constexpr uint32_t drapeTargetSize = 768;
     TexturePool texturePool{drapeTargetSize, drapeTileSize};

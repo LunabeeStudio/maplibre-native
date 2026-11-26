@@ -12,9 +12,9 @@ It is built from two layers:
 
 1. **Upstream `feature/terrain-3d`** (the 3D terrain work, not yet in upstream `main`), at the commit Cumbly pins:
    `2ef164d154f0`. Everything below that commit is upstream history.
-2. **Cumbly changes**, one commit each, first ported from Cumbly's `tools/cli/patches/maplibre/NNNN-*.patch`. Each
-   commit body says `Cumbly patch NNNN-<name>.patch.` Names containing `-android-` or `-ios-` concern that platform
-   only; the rest are shared core changes.
+2. **Cumbly changes**, one commit each, first ported from Cumbly's `tools/cli/patches/maplibre/NNNN-*.patch` (the
+   folder is gone since both platforms build from here). Each commit body says `Cumbly patch NNNN-<name>.patch.`
+   Names containing `-android-` or `-ios-` concern that platform only; the rest are shared core changes.
 
 ### How Cumbly consumes this branch
 
@@ -43,10 +43,30 @@ scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-n
   consumer credentials every Lunabee machine and TeamCity already have.
 - Requires NDK `28.2.13676358` and SDK CMake 3.x (`sdkmanager "ndk;28.2.13676358" "cmake;3.31.6"`).
 
-**iOS: still built by Cumbly.** Its CLI (`./cumbly ios maplibre`) checks out upstream at `2ef164d`, applies the shared
-and `-ios-` patches kept in Cumbly, runs `bazel build //platform/ios:MapLibre.dynamic --compilation_mode=opt
---//:renderer=metal` and commits the XCFramework under `Cumbly_iOS/maplibre-terrain/`. iOS changes made here must
-still be mirrored as patches there until iOS moves to this repo too.
+**iOS: this repo is the source of truth too.** Cumbly carries no iOS MapLibre code, patch or XCFramework: iOS
+changes are made here only, and nothing is mirrored as patches in Cumbly any more. Release from here, then pin the
+tag in Cumbly (`./cumbly ios maplibre <tag>`):
+
+```bash
+cd platform/ios
+scripts/publish-cumbly.sh local                  # build, print the XCFramework path (Cumbly: ./cumbly ios maplibre --local <this checkout>)
+scripts/publish-cumbly.sh release [--prerelease] # build, zip, publish a GitHub release on this fork
+scripts/publish-cumbly.sh --print-version
+```
+
+- Build: `bazelisk build //platform/ios:MapLibre.dynamic --compilation_mode=opt --//:renderer=metal` (Metal, arm64
+  device and arm64 simulator, minimum iOS 16). The script copies `platform/darwin/bazel/example_config.bzl` to
+  `config.bzl` when absent.
+- Version `<platform/ios/VERSION>-cumbly-<HEAD committer time, Unix seconds>-<short HEAD sha>`, e.g.
+  `7.1.0-cumbly-1795724625-f68dced`; a local build of a dirty tree gets `-dirty`. `release` refuses a dirty tree and a
+  commit that is not pushed, and a tag that already exists, so every release maps to one commit.
+- The release is tagged `cumbly-ios-<version>` (never colliding with upstream's `ios-v*` tags) and holds
+  `MapLibre.xcframework.zip`, which Swift Package Manager downloads for a `binaryTarget`, and its checksum in
+  `MapLibre.xcframework.zip.sha256`. The fork is public, so Xcode downloads it with no credentials.
+- Release from a merged commit of `cumbly`; use `--prerelease` to try a commit still on a PR branch. There is no fork
+  CI: it runs on a developer Mac, like Android's publish.
+- Cumbly's `Cumbly_iOS/MapLibreTerrain/Package.swift` pins one release (url and checksum). `./cumbly ios maplibre
+  --local <this checkout>` builds this tree and links that copy instead, to try a change in the app before releasing.
 
 The Cumbly app ships the **Vulkan** flavor (`android-sdk-vulkan`). The Android changes that moved to Vulkan, on top of
 the upstream terrain branch:
