@@ -68,12 +68,16 @@ fi
 tag="cumbly-ios-${version}"
 if [[ "$target" == "release" ]]; then
     command -v gh > /dev/null || { echo "gh missing: brew install gh" >&2; exit 1; }
+    gh auth status > /dev/null 2>&1 || { echo "gh is not logged in (or GitHub is unreachable): gh auth login" >&2; exit 1; }
     if [[ -z "$(git branch --remotes --contains HEAD)" ]]; then
         echo "HEAD ${sha} is not on the remote: push it first, the release is built from a pushed commit" >&2
         exit 1
     fi
-    if gh release view "$tag" --repo "$repository" > /dev/null 2>&1; then
+    if view="$(gh release view "$tag" --repo "$repository" 2>&1)"; then
         echo "${tag} already exists: commit something new to release again" >&2
+        exit 1
+    elif [[ "$view" != *"release not found"* ]]; then
+        echo "cannot check whether ${tag} exists: ${view}" >&2
         exit 1
     fi
 fi
