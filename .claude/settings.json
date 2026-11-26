@@ -6,9 +6,22 @@
         "repo": "LunabeeStudio/Lunabee-Plane"
       },
       "autoUpdate": true
+    },
+    "lunabee-maplibre": {
+      "source": {
+        "source": "github",
+        "repo": "LunabeeStudio/maplibre-native",
+        "ref": "cumbly",
+        "sparsePaths": [
+          ".claude-plugin",
+          "tools/claude-plugins"
+        ]
+      },
+      "autoUpdate": true
     }
   },
   "enabledPlugins": {
-    "lb-board@lunabee-plane": true
+    "lb-board@lunabee-plane": true,
+    "mln-gpu@lunabee-maplibre": true
   }
 }

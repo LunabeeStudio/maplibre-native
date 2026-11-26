@@ -1,0 +1,19 @@
+{
+  "name": "lunabee-maplibre",
+  "owner": {
+    "name": "Lunabee Studio",
+    "url": "https://github.com/LunabeeStudio"
+  },
+  "metadata": {
+    "description": "Claude Code plugins for Lunabee's MapLibre Native fork (branch cumbly), shared by maplibre-native and Cumbly."
+  },
+  "plugins": [
+    {
+      "name": "mln-gpu",
+      "source": "./tools/claude-plugins/mln-gpu",
+      "description": "vulkan-engineer and metal-engineer agents, plus spec-lookup, validate and capture skills for the Vulkan and Metal backends.",
+      "category": "development",
+      "tags": ["maplibre", "vulkan", "metal"]
+    }
+  ]
+}
