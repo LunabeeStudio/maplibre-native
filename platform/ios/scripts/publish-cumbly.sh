@@ -11,7 +11,8 @@
 # The version is `<platform/ios/VERSION>-cumbly-<HEAD commit time, Unix seconds>-<short HEAD sha>`,
 # e.g. `7.1.0-cumbly-1795700000-33ea4fe`, so versions of one VERSION sort by commit time. A local build of a
 # tree with uncommitted changes gets a `-dirty` suffix; a release refuses one, and refuses a commit that is
-# not on the remote, so every release maps to one pushed commit.
+# not on the remote, so every release maps to one pushed commit. Without `--prerelease` that commit must
+# also be on origin/cumbly, so a final release never comes from an unmerged branch.
 #
 # The build is Bazel's `//platform/ios:MapLibre.dynamic` with the Metal renderer (arm64 device and arm64
 # simulator). The release is tagged `cumbly-ios-<version>` (never colliding with upstream's `ios-v*` tags)
@@ -73,7 +74,23 @@ if [[ "$target" == "release" ]]; then
         echo "HEAD ${sha} is not on the remote: push it first, the release is built from a pushed commit" >&2
         exit 1
     fi
+    if [[ "$prerelease" == false ]]; then
+        git fetch --quiet origin cumbly
+        if ! git merge-base --is-ancestor HEAD origin/cumbly; then
+            echo "HEAD ${sha} is not on origin/cumbly: merge it first, or pass --prerelease to try it" >&2
+            exit 1
+        fi
+    fi
     if view="$(gh release view "$tag" --repo "$repository" 2>&1)"; then
+        echo "${tag} already exists: commit something new to release again" >&2
+        exit 1
+    elif [[ "$view" != *"release not found"* ]]; then
+        echo "cannot check whether ${tag} exists: ${view}" >&2
+        exit 1
+    fi
+fi
+
+ry" 2>&1)"; then
         echo "${tag} already exists: commit something new to release again" >&2
         exit 1
     elif [[ "$view" != *"release not found"* ]]; then
