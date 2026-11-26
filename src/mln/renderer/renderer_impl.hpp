@@ -68,7 +68,8 @@ private:
     // tiles at tileSize * 2 for this reason). Only the tiles nearest the camera, where the ground is magnified
     // most, get the larger drapeTargetSize (768 px, not 1024: 1024 px cost ~9 MB per target with its stencil
     // and ran older phones out of GPU memory); every other tile's target is drapeTileSize, with mips:
-    // ~44 % of a 768 px target's memory (512^2 / 768^2), ~59 % counting the mips. RenderTerrain::drapeSizesFor decides which tiles are which.
+    // ~44 % of a 768 px target's memory (512^2 / 768^2), ~59 % counting the mips.
+    // RenderTerrain::drapeSizesFor decides which tiles are which.
     static constexpr uint32_t drapeTileSize = 512;
     static constexpr uint32_t drapeTargetSize = 768;
     TexturePool texturePool{drapeTargetSize, drapeTileSize};
