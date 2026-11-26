@@ -1,0 +1,11 @@
+{
+  "name": "mln-gpu",
+  "description": "Vulkan and Metal backend tools for Lunabee's MapLibre Native fork (branch cumbly): the vulkan-engineer and metal-engineer agents, plus spec-lookup, validate and capture skills for each backend.",
+  "author": {
+    "name": "Lunabee Studio",
+    "url": "https://github.com/LunabeeStudio"
+  },
+  "homepage": "https://github.com/LunabeeStudio/maplibre-native/tree/cumbly/tools/claude-plugins/mln-gpu",
+  "repository": "https://github.com/LunabeeStudio/maplibre-native",
+  "keywords": ["maplibre", "vulkan", "metal", "gpu", "terrain"]
+}

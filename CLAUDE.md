@@ -81,14 +81,30 @@ a terminal opens a dashboard. See `tools/cli/CLAUDE.md`.
   activities. Read it before touching terrain code. When in doubt, match maplibre-gl-js behaviour.
 - `TERRAIN_INSTANCING_EXPERIMENT.md` holds design notes for instancing the terrain draws (experiment, not wired up).
 
+## Claude Code plugin (`mln-gpu`)
+
+The Vulkan and Metal agents and skills below ship as the `mln-gpu` plugin in `tools/claude-plugins/mln-gpu/`, listed
+by the `lunabee-maplibre` marketplace (`.claude-plugin/marketplace.json`). This repo and Cumbly both declare that
+marketplace in `.claude/settings.json` (GitHub source, `ref: cumbly`, `autoUpdate: true`), so a change reaches
+everyone once it is merged into `cumbly`. Plugin and marketplace carry no `version`: each install follows the
+commit. Agents and skills take the plugin prefix (`mln-gpu:vulkan-engineer`, `mln-gpu:metal-validate`).
+
+- Try an unmerged change: `claude --plugin-dir tools/claude-plugins/mln-gpu`.
+- Check the manifests: `claude plugin validate .` and `claude plugin validate tools/claude-plugins/mln-gpu`.
+- In a skill, use `${CLAUDE_SKILL_DIR}` for its own scripts and `${CLAUDE_PLUGIN_ROOT}/skills/<other>/` for a
+  sibling's, never `~/.claude/...`.
+- The scripts find the fork from `MLN_REPO`, else the git top level, else `~/dev/maplibre-native` (when run from
+  Cumbly).
+
 ## Vulkan work
 
-Vulkan backend work uses the user-level tools, not files in this repo: the `vulkan-engineer` agent
-(`~/.claude/agents/vulkan-engineer.md`) carries the backend map and the conventions that differ from GL, and three
-skills (`~/.claude/skills/`) give it evidence instead of recall:
+Vulkan backend work uses the `mln-gpu` plugin: the `vulkan-engineer` agent
+(`tools/claude-plugins/mln-gpu/agents/vulkan-engineer.md`) carries the backend map and the conventions that differ
+from GL, and three skills give it evidence instead of recall:
 
 - `vulkan-spec-lookup`: `vk-lookup.py <name-or-VUID>` reads the vendored registry (`vendor/Vulkan-Headers`); it finds
-  the fork from the git top level, or from `MLN_REPO`. The backend is Vulkan **1.0**; the script flags anything newer.
+  the fork from `MLN_REPO`, the git top level or `~/dev/maplibre-native`. The backend is Vulkan **1.0**; the script
+  flags anything newer.
 - `vulkan-validate`: build with the validation layer and read VUIDs from the device. Validation is off by default
   on Android; `-Pmaplibre.vulkanValidation=true` (CMake `-DMLN_VULKAN_VALIDATION=ON`) turns it on.
 - `vulkan-capture`: screenshots, GFXReconstruct traces and call logs for a frame that is wrong while validation is
@@ -99,8 +115,8 @@ skills (`~/.claude/skills/`) give it evidence instead of recall:
 
 ## Metal work
 
-Metal backend work (iOS, macOS) has the same set of user-level tools: the `metal-engineer` agent
-(`~/.claude/agents/metal-engineer.md`) and three skills:
+Metal backend work (iOS, macOS) has the same set of tools in the `mln-gpu` plugin: the `metal-engineer` agent
+(`tools/claude-plugins/mln-gpu/agents/metal-engineer.md`) and three skills:
 
 - `metal-spec-lookup`: `mtl-lookup.py <ObjC or MTL:: name>` reads the SDK headers, the vendored metal-cpp, the MSL
   stdlib headers and Apple's MSL spec and feature set tables, and flags APIs newer than iOS 16.0 / macOS 14.3.
