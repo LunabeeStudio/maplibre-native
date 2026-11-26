@@ -1,0 +1,35 @@
+[project]
+name = "mln-cli"
+version = "0.1.0"
+description = "MapLibre Native (cumbly branch) dev CLI: Android AAR build and publish, GLFW app on macOS"
+requires-python = ">=3.12"
+dependencies = [
+    "textual>=8.2.8",
+    "typer>=0.27.3",
+]
+
+[project.scripts]
+mln = "mln.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mln"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.3",
+]

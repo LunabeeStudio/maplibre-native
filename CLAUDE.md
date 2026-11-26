@@ -68,6 +68,12 @@ the upstream terrain branch:
   custom layer hosts deleted, when Cumbly moved to Vulkan. `aa97643842fc` (custom layers in the terrain's 3D depth
   range) and `e49c000c0798` (768 px drape targets) are core changes and apply to every backend.
 
+### Dev CLI
+
+`./mln` (`tools/cli/`, Python, run through `uv`) wraps the commands below: `./mln android build|publish|version`,
+`./mln macos build|run|stop` (GLFW app, Vulkan via KosmicKrisp or MoltenVK, or Metal), `./mln doctor`. Bare `./mln` in
+a terminal opens a dashboard. See `tools/cli/CLAUDE.md`.
+
 ## Terrain docs
 
 - `TERRAIN.md` is the main reference for the terrain implementation: architecture, key files, the **backend parity
