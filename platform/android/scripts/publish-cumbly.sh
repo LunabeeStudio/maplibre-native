@@ -15,13 +15,16 @@
 # uncommitted changes gets a `-dirty` suffix; an Artifactory build refuses one, and refuses a
 # version already there, so every published version maps to one commit.
 #
+# An Artifactory publish also pushes the tag `cumbly-android-<version>` on HEAD, the twin of the iOS
+# release tag `cumbly-ios-<version>`: it refuses a HEAD that is not on the remote, or a tag that exists.
+#
 # Artifactory credentials: ARTIFACTORY_DEPLOYER_USERNAME and ARTIFACTORY_DEPLOYER_API_KEY when set,
 # otherwise `artifactory_deployer_release_username` and `artifactory_deployer_release_api_key`
 # from ~/.gradle/gradle.properties (the ones Lunabee's library projects publish with).
 set -euo pipefail
 
 usage() {
-    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
@@ -74,6 +77,7 @@ if [[ "$print_version" == true ]]; then
     echo "$version"
     exit 0
 fi
+tag="cumbly-android-${version}"
 
 case "$target" in
     local)
@@ -90,6 +94,17 @@ case "$target" in
             exit 1
         fi
         export MAVEN_REPOSITORY_USERNAME MAVEN_REPOSITORY_PASSWORD
+        if [[ -z "$(git branch --remotes --contains HEAD)" ]]; then
+            echo "HEAD ${sha} is not on the remote: push it first, the tag must name a pushed commit" >&2
+            exit 1
+        fi
+        if ! remote_tag="$(git ls-remote --tags origin "refs/tags/${tag}")"; then
+            echo "cannot check whether ${tag} exists on origin" >&2
+            exit 1
+        elif [[ -n "$remote_tag" ]]; then
+            echo "${tag} already exists on origin: commit something new to publish again" >&2
+            exit 1
+        fi
         pom="${MAVEN_REPOSITORY_URL}/org/maplibre/gl/android-sdk-${flavor}/${version}/android-sdk-${flavor}-${version}.pom"
         # -K - keeps the credentials off the command line.
         status="$(curl -s -o /dev/null -w '%{http_code}' -K - "$pom" <<< "user = \"${MAVEN_REPOSITORY_USERNAME}:${MAVEN_REPOSITORY_PASSWORD}\"")"
@@ -107,6 +122,15 @@ echo "publishing org.maplibre.gl:android-sdk-${flavor}:${version} (ABIs: ${abis}
     "-Pmaplibre.versionName=${version}" \
     "-Pmaplibre.abis=${abis}" \
     --console=plain
+
+if [[ "$target" == "artifactory" ]]; then
+    git tag -f "$tag" HEAD > /dev/null
+    if ! git push --quiet origin "refs/tags/${tag}"; then
+        echo "published, but pushing ${tag} failed: git push origin refs/tags/${tag}" >&2
+        exit 1
+    fi
+    echo "tagged ${tag}"
+fi
 
 echo
 echo "published. In Cumbly, set in gradle/libs.versions.toml:"
