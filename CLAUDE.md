@@ -39,6 +39,10 @@ scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-n
   `artifactory_deployer_release_username` / `artifactory_deployer_release_api_key` from `~/.gradle/gradle.properties`
   (or `ARTIFACTORY_DEPLOYER_USERNAME` / `ARTIFACTORY_DEPLOYER_API_KEY`). It refuses a version already there, so
   publish each commit once.
+- `artifactory` then pushes the tag `cumbly-android-<version>` on HEAD, the twin of iOS's `cumbly-ios-<version>`
+  release tag, so every published build of either platform is a tag on this fork. It refuses a HEAD not on the
+  remote and a tag already on `origin`, both before building. Publish Android and release iOS from the same merged
+  `cumbly` commit, so Cumbly's two pins name one MapLibre core.
 - Cumbly's `settings.gradle.kts` resolves that one module from Maven Local first, then Artifactory, with the
   consumer credentials every Lunabee machine and TeamCity already have.
 - Requires NDK `28.2.13676358` and SDK CMake 3.x (`sdkmanager "ndk;28.2.13676358" "cmake;3.31.6"`).
