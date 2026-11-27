@@ -77,6 +77,11 @@ public:
     /// cannot see but whose height the center clamp needs. Nothing is asked for where the cover
     /// already holds a tile over it.
     std::vector<LatLng> alsoCover{};
+    /// Positions the source asks a tile for at its own finest zoom, wherever the view is, as
+    /// `alsoCover` asks at the cover's: the ground under a camera's eye close over it, which the
+    /// clearance is measured from, and which a coarser tile misreads by metres. Heights only, the
+    /// tile is not drawn. Nothing is asked for where the cover already holds that tile.
+    std::vector<LatLng> alsoCoverFinest{};
     /// With terrain on: leave out the tiles that build none of the source's layers, every layer being
     /// outside its zoom range for them (GeometryTile::setLayers). They draw nothing.
     bool leaveOutEmptyTiles = false;

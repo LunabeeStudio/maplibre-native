@@ -151,7 +151,7 @@ public:
     double lastKnownEyeElevation = std::numeric_limits<double>::quiet_NaN();
     void forgetEyeElevation();
     /// How far above the ground under it the eye is kept, in meters.
-    static constexpr double eyeClearanceMeters = 10.0;
+    static constexpr double eyeClearanceMeters = 20.0;
     /// The lowest height the center can be at with the eye `eyeClearanceMeters` above the ground
     /// under it, as last reported; -infinity until the renderer has reported that ground.
     double eyeClearCenterAltitude() const;

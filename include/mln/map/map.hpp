@@ -270,7 +270,7 @@ public:
     /// Whether the map centre rides the terrain surface rather than sea level. Off by
     /// default; with it on the center altitude follows the rendered terrain height under the
     /// centre, so pitching over tall ground keeps the camera above it instead of sinking
-    /// in, as in maplibre-gl-js. The camera's eye is kept 10 m above the ground under it as well:
+    /// in, as in maplibre-gl-js. The camera's eye is kept 20 m above the ground under it as well:
     /// at a steep pitch the eye sits only a little above the center, so dragging the center away
     /// from the camera over rising ground would otherwise leave the eye inside the hill.
     ///
