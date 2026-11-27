@@ -29,11 +29,13 @@ scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-n
 ```
 
 - Artifact `org.maplibre.gl:android-sdk-vulkan` (`--flavor opengl` gives `android-sdk-opengl`, which no longer carries TrackLayer / SkyLayer), version
-  `<platform/android/VERSION>-cumbly-<HEAD committer time, Unix seconds>-<short HEAD sha>`, e.g.
-  `13.7.1-cumbly-1795615450-608efb0`, so versions sort by commit time. Keep that shape (iOS uses it too): Renovate's
-  `maven` versioning, which Cumbly's `renovate.json` sets for this module, reads every such version as stable,
-  orders it by the 10-digit time and puts it above the plain upstream release of the same number; `semver` would read
-  it as a pre-release. A dot or `+` instead of the `-` separators breaks that. A local build of a dirty tree
+  `<platform/android/VERSION>-<HEAD committer time, Unix seconds>-cumbly-<short HEAD sha>`, e.g.
+  `13.8.0-1795767599-cumbly-7de4555`, so versions sort by commit time. Keep that shape (iOS uses it too): the 10-digit
+  time segment right after the upstream number makes Gradle ordering (Android Lint's `NewerVersionAvailable`, Gradle
+  conflict resolution, Renovate's `gradle` versioning) and Maven ordering (Renovate's `maven` versioning) both put the
+  version above the plain upstream release of the same number, ordered by commit time, below the next upstream patch
+  release. The earlier `<VERSION>-cumbly-<time>-<sha>` shape sorted below plain upstream under Gradle ordering, and Lint
+  flagged it. Keep the `-` separators; a dot or `+` instead breaks the ordering. A local build of a dirty tree
   gets `-dirty`; `artifactory` refuses one. `--abis "arm64-v8a x86_64"` (space-separated) narrows a local build.
 - The version comes from `-Pmaplibre.versionName` (read in `buildSrc/.../maplibre.artifact-settings.gradle.kts`);
   publishing goes through the existing `publicationRepositoryUrl` path of `maplibre.gradle-publish.gradle.kts`,
@@ -64,8 +66,8 @@ scripts/publish-cumbly.sh --print-version
 - Build: `bazelisk build //platform/ios:MapLibre.dynamic --compilation_mode=opt --//:renderer=metal` (Metal, arm64
   device and arm64 simulator, minimum iOS 16). The script copies `platform/darwin/bazel/example_config.bzl` to
   `config.bzl` when absent.
-- Version `<platform/ios/VERSION>-cumbly-<HEAD committer time, Unix seconds>-<short HEAD sha>`, e.g.
-  `7.1.0-cumbly-1795724625-f68dced`; a local build of a dirty tree gets `-dirty`. `release` refuses a dirty tree and a
+- Version `<platform/ios/VERSION>-<HEAD committer time, Unix seconds>-cumbly-<short HEAD sha>`, e.g.
+  `7.1.0-1795724625-cumbly-f68dced`; a local build of a dirty tree gets `-dirty`. `release` refuses a dirty tree and a
   commit that is not pushed, and a tag that already exists, so every release maps to one commit.
 - The release is tagged `cumbly-ios-<version>` (never colliding with upstream's `ios-v*` tags) and holds
   `MapLibre.xcframework.zip`, which Swift Package Manager downloads for a `binaryTarget`, and its checksum in
