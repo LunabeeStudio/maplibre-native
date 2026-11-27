@@ -11,7 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 It is built from two layers:
 
 1. **Upstream `feature/terrain-3d`** (the 3D terrain work, not yet in upstream `main`), at the commit Cumbly pins:
-   `2ef164d154f0`. Everything below that commit is upstream history.
+   `07a8852` (merged in fork PR #11). Everything below that commit is upstream history. Cumbly pins fork commit
+   `7de4555` on both platforms.
 2. **Cumbly changes**, one commit each, first ported from Cumbly's `tools/cli/patches/maplibre/NNNN-*.patch` (the
    folder is gone since both platforms build from here). Each commit body says `Cumbly patch NNNN-<name>.patch.`
    Names containing `-android-` or `-ios-` concern that platform only; the rest are shared core changes.
@@ -35,7 +36,7 @@ scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-n
   conflict resolution, Renovate's `gradle` versioning) and Maven ordering (Renovate's `maven` versioning) both put the
   version above the plain upstream release of the same number, ordered by commit time, below the next upstream patch
   release. The earlier `<VERSION>-cumbly-<time>-<sha>` shape sorted below plain upstream under Gradle ordering, and Lint
-  flagged it. Keep the `-` separators; a dot or `+` instead breaks the ordering. A local build of a dirty tree
+  flagged it. Keep the `-` separators, for consistency with the iOS tag and Cumbly's `allowedVersions` regex. A local build of a dirty tree
   gets `-dirty`; `artifactory` refuses one. `--abis "arm64-v8a x86_64"` (space-separated) narrows a local build.
 - The version comes from `-Pmaplibre.versionName` (read in `buildSrc/.../maplibre.artifact-settings.gradle.kts`);
   publishing goes through the existing `publicationRepositoryUrl` path of `maplibre.gradle-publish.gradle.kts`,
@@ -44,9 +45,10 @@ scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-n
   `artifactory_deployer_release_username` / `artifactory_deployer_release_api_key` from `~/.gradle/gradle.properties`
   (or `ARTIFACTORY_DEPLOYER_USERNAME` / `ARTIFACTORY_DEPLOYER_API_KEY`). It refuses a version already there, so
   publish each commit once.
-- `artifactory` then pushes the tag `cumbly-android-<version>` on HEAD, the twin of iOS's `cumbly-ios-<version>`
-  release tag, so every published build of either platform is a tag on this fork. It refuses a HEAD not on the
-  remote and a tag already on `origin`, both before building. Publish Android and release iOS from the same merged
+- `artifactory` then pushes the tag `cumbly-android-<version>` on HEAD (`cumbly-android-<flavor>-<version>` for a
+  flavor other than vulkan), the twin of iOS's `cumbly-ios-<version>` release tag, so every published build of
+  either platform is a tag on this fork. It refuses a HEAD not on `origin/cumbly` and a tag already on `origin`,
+  both before building. Publish Android and release iOS from the same merged
   `cumbly` commit, so Cumbly's two pins name one MapLibre core.
 - Cumbly's `settings.gradle.kts` resolves that one module from Maven Local first, then Artifactory, with the
   consumer credentials every Lunabee machine and TeamCity already have.

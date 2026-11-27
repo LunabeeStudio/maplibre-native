@@ -16,8 +16,9 @@
 # tree with uncommitted changes gets a `-dirty` suffix; an Artifactory build refuses one, and refuses a
 # version already there, so every published version maps to one commit.
 #
-# An Artifactory publish also pushes the tag `cumbly-android-<version>` on HEAD, the twin of the iOS
-# release tag `cumbly-ios-<version>`: it refuses a HEAD that is not on the remote, or a tag that exists.
+# An Artifactory publish also pushes the tag `cumbly-android-<version>` on HEAD (`cumbly-android-<flavor>-<version>`
+# for a flavor other than vulkan), the twin of the iOS release tag `cumbly-ios-<version>`: it refuses a HEAD
+# that is not on origin/cumbly, or a tag that exists.
 #
 # Artifactory credentials: ARTIFACTORY_DEPLOYER_USERNAME and ARTIFACTORY_DEPLOYER_API_KEY when set,
 # otherwise `artifactory_deployer_release_username` and `artifactory_deployer_release_api_key`
@@ -25,7 +26,7 @@
 set -euo pipefail
 
 usage() {
-    sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
+    awk 'NR > 1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "$0"
     exit "${1:-0}"
 }
 
@@ -78,7 +79,11 @@ if [[ "$print_version" == true ]]; then
     echo "$version"
     exit 0
 fi
-tag="cumbly-android-${version}"
+if [[ "$flavor" == "vulkan" ]]; then
+    tag="cumbly-android-${version}"
+else
+    tag="cumbly-android-${flavor}-${version}"
+fi
 
 case "$target" in
     local)
@@ -95,8 +100,9 @@ case "$target" in
             exit 1
         fi
         export MAVEN_REPOSITORY_USERNAME MAVEN_REPOSITORY_PASSWORD
-        if [[ -z "$(git branch --remotes --contains HEAD)" ]]; then
-            echo "HEAD ${sha} is not on the remote: push it first, the tag must name a pushed commit" >&2
+        git fetch --quiet origin cumbly
+        if ! git merge-base --is-ancestor HEAD origin/cumbly; then
+            echo "HEAD ${sha} is not on origin/cumbly: merge it first" >&2
             exit 1
         fi
         if ! remote_tag="$(git ls-remote --tags origin "refs/tags/${tag}")"; then
