@@ -11,7 +11,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 It is built from two layers:
 
 1. **Upstream `feature/terrain-3d`** (the 3D terrain work, not yet in upstream `main`), at the commit Cumbly pins:
-   `2ef164d154f0`. Everything below that commit is upstream history.
+   `07a8852` (merged in fork PR #11). Everything below that commit is upstream history. Cumbly pins fork commit
+   `7de4555` on both platforms.
 2. **Cumbly changes**, one commit each, first ported from Cumbly's `tools/cli/patches/maplibre/NNNN-*.patch` (the
    folder is gone since both platforms build from here). Each commit body says `Cumbly patch NNNN-<name>.patch.`
    Names containing `-android-` or `-ios-` concern that platform only; the rest are shared core changes.
@@ -29,8 +30,13 @@ scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-n
 ```
 
 - Artifact `org.maplibre.gl:android-sdk-vulkan` (`--flavor opengl` gives `android-sdk-opengl`, which no longer carries TrackLayer / SkyLayer), version
-  `<platform/android/VERSION>-cumbly-<HEAD committer time, Unix seconds>-<short HEAD sha>`, e.g.
-  `13.7.1-cumbly-1795615450-608efb0`, so versions sort by commit time. A local build of a dirty tree
+  `<platform/android/VERSION>-<HEAD committer time, Unix seconds>-cumbly-<short HEAD sha>`, e.g.
+  `13.8.0-1795767599-cumbly-7de4555`, so versions sort by commit time. Keep that shape (iOS uses it too): the 10-digit
+  time segment right after the upstream number makes Gradle ordering (Android Lint's `NewerVersionAvailable`, Gradle
+  conflict resolution, Renovate's `gradle` versioning) and Maven ordering (Renovate's `maven` versioning) both put the
+  version above the plain upstream release of the same number, ordered by commit time, below the next upstream patch
+  release. The earlier `<VERSION>-cumbly-<time>-<sha>` shape sorted below plain upstream under Gradle ordering, and Lint
+  flagged it. Keep the `-` separators, for consistency with the iOS tag and Cumbly's `allowedVersions` regex. A local build of a dirty tree
   gets `-dirty`; `artifactory` refuses one. `--abis "arm64-v8a x86_64"` (space-separated) narrows a local build.
 - The version comes from `-Pmaplibre.versionName` (read in `buildSrc/.../maplibre.artifact-settings.gradle.kts`);
   publishing goes through the existing `publicationRepositoryUrl` path of `maplibre.gradle-publish.gradle.kts`,
@@ -39,6 +45,11 @@ scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-n
   `artifactory_deployer_release_username` / `artifactory_deployer_release_api_key` from `~/.gradle/gradle.properties`
   (or `ARTIFACTORY_DEPLOYER_USERNAME` / `ARTIFACTORY_DEPLOYER_API_KEY`). It refuses a version already there, so
   publish each commit once.
+- `artifactory` then pushes the tag `cumbly-android-<version>` on HEAD (`cumbly-android-<flavor>-<version>` for a
+  flavor other than vulkan), the twin of iOS's `cumbly-ios-<version>` release tag, so every published build of
+  either platform is a tag on this fork. It refuses a HEAD not on `origin/cumbly` and a tag already on `origin`,
+  both before building. Publish Android and release iOS from the same merged
+  `cumbly` commit, so Cumbly's two pins name one MapLibre core.
 - Cumbly's `settings.gradle.kts` resolves that one module from Maven Local first, then Artifactory, with the
   consumer credentials every Lunabee machine and TeamCity already have.
 - Requires NDK `28.2.13676358` and SDK CMake 3.x (`sdkmanager "ndk;28.2.13676358" "cmake;3.31.6"`).
@@ -57,8 +68,8 @@ scripts/publish-cumbly.sh --print-version
 - Build: `bazelisk build //platform/ios:MapLibre.dynamic --compilation_mode=opt --//:renderer=metal` (Metal, arm64
   device and arm64 simulator, minimum iOS 16). The script copies `platform/darwin/bazel/example_config.bzl` to
   `config.bzl` when absent.
-- Version `<platform/ios/VERSION>-cumbly-<HEAD committer time, Unix seconds>-<short HEAD sha>`, e.g.
-  `7.1.0-cumbly-1795724625-f68dced`; a local build of a dirty tree gets `-dirty`. `release` refuses a dirty tree and a
+- Version `<platform/ios/VERSION>-<HEAD committer time, Unix seconds>-cumbly-<short HEAD sha>`, e.g.
+  `7.1.0-1795724625-cumbly-f68dced`; a local build of a dirty tree gets `-dirty`. `release` refuses a dirty tree and a
   commit that is not pushed, and a tag that already exists, so every release maps to one commit.
 - The release is tagged `cumbly-ios-<version>` (never colliding with upstream's `ios-v*` tags) and holds
   `MapLibre.xcframework.zip`, which Swift Package Manager downloads for a `binaryTarget`, and its checksum in

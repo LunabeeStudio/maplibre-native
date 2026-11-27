@@ -8,8 +8,9 @@
 #   --prerelease     mark the GitHub release as a pre-release (a try-out before the fork PR is merged)
 #   --print-version  print the version a build of this commit would get, and exit
 #
-# The version is `<platform/ios/VERSION>-cumbly-<HEAD commit time, Unix seconds>-<short HEAD sha>`,
-# e.g. `7.1.0-cumbly-1795700000-33ea4fe`, so versions of one VERSION sort by commit time. A local build of a
+# The version is `<platform/ios/VERSION>-<HEAD commit time, Unix seconds>-cumbly-<short HEAD sha>`,
+# e.g. `7.1.0-1795700000-cumbly-33ea4fe`, so versions of one VERSION sort by commit time, above the plain
+# upstream release of that number (same shape as the Android AAR's version). A local build of a
 # tree with uncommitted changes gets a `-dirty` suffix; a release refuses one, and refuses a commit that is
 # not on the remote, so every release maps to one pushed commit. Without `--prerelease` that commit must
 # also be on origin/cumbly, so a final release never comes from an unmerged branch.
@@ -53,7 +54,7 @@ sha="$(git rev-parse --short=7 HEAD)"
 # Committer time, not author time: a rebase keeps the author time but gives each commit a new
 # committer time, so a rebased commit still sorts after everything published before it.
 timestamp="$(git log -1 --format=%ct HEAD)"
-version="$(tr -d '[:space:]' < VERSION)-cumbly-${timestamp}-${sha}"
+version="$(tr -d '[:space:]' < VERSION)-${timestamp}-cumbly-${sha}"
 if [[ -n "$(git --no-optional-locks status --porcelain --untracked-files=no -- "$root")" ]]; then
     if [[ "$target" == "release" ]]; then
         echo "uncommitted changes: commit them first, so the release maps to a commit" >&2
