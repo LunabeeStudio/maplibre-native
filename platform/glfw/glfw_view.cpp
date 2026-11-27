@@ -1473,6 +1473,7 @@ void GLFWView::toggleSkyAndTrackLayers() {
         style.removeLayer(skyId);
         style.setTerrain(nullptr);
         style.removeSource(demId);
+        map->setCenterClampedToGround(false);
         map->setBounds(mln::BoundOptions().withMaxPitch(60));
         return;
     }
@@ -1499,6 +1500,8 @@ void GLFWView::toggleSkyAndTrackLayers() {
     style.addSource(std::make_unique<mln::style::RasterDEMSource>(
         demId, std::string("https://tiles.mapterhorn.com/tilejson.json"), 512));
     style.setTerrain(std::make_unique<mln::style::Terrain>(demId, 1.0f));
+    // As Cumbly does: the center rides the ground and the eye stays 20 m above it.
+    map->setCenterClampedToGround(true);
     style.addLayer(std::make_unique<mln::style::HillshadeLayer>(hillshadeId, demId), firstSymbol);
 
     style.addLayer(std::make_unique<mln::style::CustomLayer>(
