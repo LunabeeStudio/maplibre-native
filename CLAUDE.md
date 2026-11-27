@@ -30,7 +30,10 @@ scripts/publish-cumbly.sh artifactory   # into Lunabee's Artifactory (maplibre-n
 
 - Artifact `org.maplibre.gl:android-sdk-vulkan` (`--flavor opengl` gives `android-sdk-opengl`, which no longer carries TrackLayer / SkyLayer), version
   `<platform/android/VERSION>-cumbly-<HEAD committer time, Unix seconds>-<short HEAD sha>`, e.g.
-  `13.7.1-cumbly-1795615450-608efb0`, so versions sort by commit time. A local build of a dirty tree
+  `13.7.1-cumbly-1795615450-608efb0`, so versions sort by commit time. Keep that shape (iOS uses it too): Renovate's
+  `maven` versioning, which Cumbly's `renovate.json` sets for this module, reads every such version as stable,
+  orders it by the 10-digit time and puts it above the plain upstream release of the same number; `semver` would read
+  it as a pre-release. A dot or `+` instead of the `-` separators breaks that. A local build of a dirty tree
   gets `-dirty`; `artifactory` refuses one. `--abis "arm64-v8a x86_64"` (space-separated) narrows a local build.
 - The version comes from `-Pmaplibre.versionName` (read in `buildSrc/.../maplibre.artifact-settings.gradle.kts`);
   publishing goes through the existing `publicationRepositoryUrl` path of `maplibre.gradle-publish.gradle.kts`,
