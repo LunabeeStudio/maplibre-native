@@ -329,6 +329,14 @@ public:
     /// low-maxzoom sources), so reach eight levels up; none is requested for it.
     static constexpr uint8_t demAncestorLevels = 8;
 
+    /// How far over the ground it reads an eye has to be to ask for its DEM tile at the source's
+    /// finest zoom (TileParameters::alsoCoverFinest), and how far it can go before it stops, in
+    /// metres. The eye is kept a few metres over the ground the map reads, which a shallower tile
+    /// gets wrong by about as much, but a camera hundreds of metres over it is not near enough
+    /// for that to show.
+    static constexpr double eyeFinestTileEnterHeight = 200.0;
+    static constexpr double eyeFinestTileLeaveHeight = 300.0;
+
     /**
      * @brief Per-tile elevation sampler for CPU-side symbol projection (line-placed labels):
      * tile-local point -> exaggerated metres, from the DEM tile covering `tileID` or its

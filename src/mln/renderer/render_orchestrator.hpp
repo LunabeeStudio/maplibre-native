@@ -233,6 +233,9 @@ private:
     std::unordered_map<std::string, std::unique_ptr<RenderLayer>> renderLayers;
     RenderLight renderLight;
     std::unique_ptr<RenderTerrain> renderTerrain;
+    /// The camera's eye is close enough over the ground for its DEM tile to be asked for at the
+    /// source's finest zoom (RenderTerrain::eyeFinestTileEnterHeight).
+    bool eyeCloseOverGround = false;
 
     CrossTileSymbolIndex crossTileSymbolIndex;
     PlacementController placementController;

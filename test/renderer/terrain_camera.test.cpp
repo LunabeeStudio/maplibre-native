@@ -41,6 +41,8 @@ using namespace mln;
 namespace {
 
 constexpr uint32_t demTileSize = 64;
+// How far over the ground the map keeps the camera's eye.
+constexpr double eyeClearanceMeters = 20.0;
 // Terrain-RGB encodes elevation as -10000 + (R * 65536 + G * 256 + B) * 0.1, so a flat
 // 1000 m plateau is RGB(1, 173, 176): 65536 + 44288 + 176 = 110000.
 constexpr double plateauMeters = 1000.0;
@@ -933,7 +935,9 @@ double rampMeters(double latitude) {
     return std::clamp((rampStartLatitude - latitude) * 100000.0, 0.0, 6000.0);
 }
 
-std::string makeRampDEMTile(const std::string& url) {
+// With `metersPerZoom` the ground is higher in a finer tile, by that much a level, as a coarse tile
+// smooths the relief it holds: which tile the camera was kept over shows in its height.
+std::string makeRampDEMTile(const std::string& url, double metersPerZoom = 0.0) {
     // ".../{z}-{x}-{y}.png"
     int z = 0, x = 0, y = 0;
     const auto name = url.substr(url.rfind('/') + 1);
@@ -943,7 +947,8 @@ std::string makeRampDEMTile(const std::string& url) {
     for (uint32_t row = 0; row < demTileSize; ++row) {
         const double mercatorY = (y + (row + 0.5) / demTileSize) / n;
         const double latitude = util::rad2deg(std::atan(std::sinh(M_PI * (1.0 - 2.0 * mercatorY))));
-        const auto encoded = static_cast<uint32_t>(std::lround((rampMeters(latitude) + 10000.0) * 10.0));
+        const auto encoded = static_cast<uint32_t>(
+            std::lround((rampMeters(latitude) + metersPerZoom * z + 10000.0) * 10.0));
         for (uint32_t col = 0; col < demTileSize; ++col) {
             uint8_t* px = image.data.get() + (row * demTileSize + col) * 4;
             px[0] = static_cast<uint8_t>(encoded >> 16);
@@ -1002,7 +1007,8 @@ TEST(TerrainCamera, EyeStaysAboveTheSlopeRisingTowardsTheCamera) {
     ASSERT_TRUE(location.has_value());
     const double ground = rampMeters(location->location.latitude());
     ASSERT_GT(ground, 100.0) << "the eye is over the climb";
-    EXPECT_GE(location->altitude, ground + 5.0) << "eye altitude " << location->altitude << " over ground " << ground;
+    EXPECT_GE(location->altitude, ground + eyeClearanceMeters - 1.0)
+        << "eye altitude " << location->altitude << " over ground " << ground;
 }
 
 // A drag over relief keeps the camera at the height it started at, as gl-js's elevationFreeze
@@ -1677,7 +1683,7 @@ const char* deepRampStyle = R"STYLE({
 
 // Ground that has not loaded is not sea level. Close to the ground in a basin below sea level
 // (the Dead Sea, -430 m), the eye check read the DEM tile under the eye that had not arrived as
-// 0 m, took the ground to be 430 m higher than it is, and lifted the camera to 10 m over it.
+// 0 m, took the ground to be 430 m higher than it is, and lifted the camera to 20 m over it.
 TEST(TerrainCamera, EyeOverUnloadedGroundBelowSeaLevelIsNotLifted) {
     util::RunLoop loop;
     auto fileSource = std::make_shared<StubFileSource>(ResourceOptions::Default(), ClientOptions());
@@ -1748,7 +1754,93 @@ TEST(TerrainCamera, TheTileUnderTheEyeKeepsTheEyeOutOfTheMountainBehind) {
     const auto eye = map.getFreeCameraOptions().getLocation();
     ASSERT_TRUE(eye.has_value());
     const double ground = rampMeters(eye->location.latitude());
-    EXPECT_GE(eye->altitude, ground + 5.0) << "eye altitude " << eye->altitude << " over ground " << ground;
+    EXPECT_GE(eye->altitude, ground + eyeClearanceMeters - 1.0)
+        << "eye altitude " << eye->altitude << " over ground " << ground;
+}
+
+namespace {
+
+constexpr double metersPerZoomLevel = 10.0;
+constexpr uint8_t finestDEMZoom = 17;
+
+const char* finestZoomRampStyle = R"STYLE({
+  "version": 8,
+  "sources": {
+    "dem": {
+      "type": "raster-dem",
+      "tiles": ["http://example.com/{z}-{x}-{y}.png"],
+      "encoding": "mapbox",
+      "maxzoom": 17,
+      "tileSize": 64
+    }
+  },
+  "terrain": {"source": "dem", "exaggeration": 1.0},
+  "layers": []
+})STYLE";
+
+struct EyeOverTheRamp {
+    util::RunLoop loop;
+    std::shared_ptr<StubFileSource> fileSource = std::make_shared<StubFileSource>(ResourceOptions::Default(),
+                                                                                  ClientOptions());
+    HeadlessFrontend frontend{halfPhone, 1};
+    MapAdapter map;
+    // The zoom of every tile asked for
+    std::multiset<int> requestedZooms;
+
+    EyeOverTheRamp()
+        : map(frontend,
+              MapObserver::nullObserver(),
+              fileSource,
+              MapOptions().withMapMode(MapMode::Static).withSize(frontend.getSize())) {
+        fileSource->tileResponse = [this](const Resource& resource) {
+            int z = 0, x = 0, y = 0;
+            std::sscanf(resource.url.substr(resource.url.rfind('/') + 1).c_str(), "%d-%d-%d.png", &z, &x, &y);
+            requestedZooms.insert(z);
+            Response res;
+            res.data = std::make_shared<std::string>(makeRampDEMTile(resource.url, metersPerZoomLevel));
+            return res;
+        };
+        map.setCenterClampedToGround(true);
+        map.setBounds(BoundOptions().withMaxPitch(85.0));
+        map.getStyle().loadJSON(finestZoomRampStyle);
+    }
+};
+
+} // namespace
+
+// The eye is kept over the ground its tile holds, and a tile at the view's zoom is a few levels
+// shallower than the DEM's finest: the ground read there is metres off a finer tile's, and the eye
+// over it just as far from the clearance asked for. Close over the ground the tile under the eye
+// is the finest the source has, whatever the view's zoom. Here a finer tile is 10 m higher a level,
+// the view takes the tiles of zoom 14 and the finest is 17.
+TEST(TerrainCamera, TheEyeIsKeptOverTheGroundOfTheFinestTileUnderIt) {
+    EyeOverTheRamp test;
+    // The center on the ridge line, looking north from the climb behind it, as the tests above.
+    test.map.jumpTo(
+        CameraOptions().withCenter(LatLng{rampStartLatitude, 11.4041}).withZoom(11.0).withPitch(80.0).withBearing(0.0));
+
+    renderUntilSettled(test.loop, test.frontend, test.map, 24);
+
+    const auto eye = test.map.getFreeCameraOptions().getLocation();
+    ASSERT_TRUE(eye.has_value());
+    const double ground = rampMeters(eye->location.latitude());
+    ASSERT_GT(ground, 100.0) << "the eye is over the climb";
+    const double finestGround = ground + metersPerZoomLevel * finestDEMZoom;
+    EXPECT_GE(eye->altitude, finestGround + eyeClearanceMeters - 1.0)
+        << "eye altitude " << eye->altitude << " over ground " << finestGround << " in the finest tile";
+    EXPECT_GT(test.requestedZooms.count(finestDEMZoom), 0u) << "the finest tile was asked for";
+}
+
+// A camera far over the ground is not near enough for the tile's height to matter: the finest
+// tile is not asked for at every step it makes over the relief.
+TEST(TerrainCamera, TheFinestTileUnderTheEyeIsNotAskedForFarOverTheGround) {
+    EyeOverTheRamp test;
+    test.map.jumpTo(CameraOptions().withCenter(LatLng{47.30, 11.4041}).withZoom(11.0).withPitch(0.0));
+
+    renderUntilSettled(test.loop, test.frontend, test.map, 24);
+
+    ASSERT_FALSE(test.requestedZooms.empty());
+    EXPECT_EQ(test.requestedZooms.count(finestDEMZoom), 0u) << "the finest tile was asked for";
 }
 
 // A center on ground at exactly 0 m is ground like any other: the renderer's last reported height
@@ -1779,7 +1871,8 @@ TEST(TerrainCamera, TheEyeIsLiftedWhenTheGroundUnderTheCenterIsAtSeaLevel) {
     ASSERT_TRUE(location.has_value());
     const double ground = rampMeters(location->location.latitude());
     ASSERT_GT(ground, 100.0) << "the eye is over the climb";
-    EXPECT_GE(location->altitude, ground + 5.0) << "eye altitude " << location->altitude << " over ground " << ground;
+    EXPECT_GE(location->altitude, ground + eyeClearanceMeters - 1.0)
+        << "eye altitude " << location->altitude << " over ground " << ground;
 }
 
 namespace {
@@ -1942,9 +2035,9 @@ TEST(TerrainCamera, EyeHeightIsUnknownUntilTheTileUnderTheNewEyeArrives) {
     EXPECT_LT(test.eyeAltitude(), 1300.0) << "eye altitude " << test.eyeAltitude() << " while its tile is on the way";
 
     test.newEyeTile = EyeLeavesTheMountain::NewEyeTile::Sent;
-    test.render(1500, [&] { return test.eyeAltitude() >= 2005.0; });
+    test.render(1500, [&] { return test.eyeAltitude() >= 2019.0; });
 
-    EXPECT_GE(test.eyeAltitude(), 2005.0) << "eye altitude " << test.eyeAltitude() << " over ground 2000";
+    EXPECT_GE(test.eyeAltitude(), 2019.0) << "eye altitude " << test.eyeAltitude() << " over ground 2000";
     EXPECT_LT(test.eyeAltitude(), 2500.0) << "eye altitude " << test.eyeAltitude() << " over ground 2000";
 }
 

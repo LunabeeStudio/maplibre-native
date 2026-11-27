@@ -171,6 +171,22 @@ void TilePyramid::update(const std::vector<Immutable<style::LayerProperties>>& l
                 idealTiles.push_back(extra);
             }
         }
+
+        // The same at the source's finest zoom, where the cover only goes that deep close to its
+        // own view. A deeper tile than the one the cover holds there is no reason to skip it.
+        for (const auto& position : parameters.alsoCoverFinest) {
+            const auto at = Projection::project(position, zoomRange.max);
+            const UnwrappedTileID unwrapped(static_cast<uint8_t>(zoomRange.max),
+                                            static_cast<int64_t>(std::floor(at.x)),
+                                            static_cast<int64_t>(std::floor(at.y)));
+            const OverscaledTileID extra(
+                static_cast<uint8_t>(std::max<int32_t>(tileZoom, zoomRange.max)), unwrapped.wrap, unwrapped.canonical);
+            if (std::none_of(idealTiles.begin(), idealTiles.end(), [&](const OverscaledTileID& tile) {
+                    return tile.wrap == extra.wrap && tile.canonical == extra.canonical;
+                })) {
+                idealTiles.push_back(extra);
+            }
+        }
     }
 
     if (parameters.coverTileLimit > 0) {
@@ -226,9 +242,11 @@ void TilePyramid::update(const std::vector<Immutable<style::LayerProperties>>& l
         // A variable-zoom cover asks for tiles finer than the nominal zoom near the camera, so
         // a bounded source has to size its range to its own max zoom. Capping at the nominal
         // zoom refuses those tiles, and updateRenderables drops the parents they would have
-        // replaced without a fallback, which reads as the layer blinking to the background.
+        // replaced without a fallback, which reads as the layer blinking to the background. A tile
+        // asked for at the source's finest zoom (alsoCoverFinest) needs the range that deep too.
         const bool variableZoom = parameters.tileLodMode == TileLodMode::Distance ||
-                                  parameters.tileLodMode == TileLodMode::Adaptive;
+                                  parameters.tileLodMode == TileLodMode::Adaptive ||
+                                  !parameters.alsoCoverFinest.empty();
         int32_t maxZoom = variableZoom ? zoomRange.max : std::min(tileZoom, static_cast<int32_t>(zoomRange.max));
         tileRange = util::TileRange::fromLatLngBounds(*bounds, zoomRange.min, maxZoom);
     }

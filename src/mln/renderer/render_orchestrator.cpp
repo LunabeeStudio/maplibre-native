@@ -359,11 +359,30 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
     // over high ground the eye sits just above the slope, the elevated cover keeps little more
     // than the eye's tile, and the clamp never learned the height that would lift the camera.
     std::vector<LatLng> terrainGroundToKnow;
+    // The eye's tile at the DEM's finest zoom as well, while the eye is close over the ground: the
+    // clearance is metres, and a tile at the view's zoom, which can be a few levels shallower, reads
+    // the ground metres off. Far above it that is no concern, and a camera passing over the relief
+    // would ask for a finest tile at every step.
+    std::vector<LatLng> terrainEyeGroundToKnowFinest;
     if (terrainEnabled) {
         if (const auto eye = updateParameters->transformState.getFreeCameraOptions().getLocation()) {
             terrainGroundToKnow.push_back(eye->location);
+            // The ground read from the tiles held, whichever they are, so it moves when the finest
+            // one arrives: the way out is higher than the way in, or a camera at the limit would
+            // ask for the tile and drop it again, every frame.
+            const auto ground = renderTerrain->getElevationForLatLng(eye->location);
+            const double limit = eyeCloseOverGround ? RenderTerrain::eyeFinestTileLeaveHeight
+                                                    : RenderTerrain::eyeFinestTileEnterHeight;
+            eyeCloseOverGround = ground && eye->altitude - *ground < limit;
+            if (eyeCloseOverGround) {
+                terrainEyeGroundToKnowFinest.push_back(eye->location);
+            }
+        } else {
+            eyeCloseOverGround = false;
         }
         terrainGroundToKnow.push_back(updateParameters->transformState.getLatLng());
+    } else {
+        eyeCloseOverGround = false;
     }
 
     const ImageDifference imageDiff = diffImages(imageImpls, updateParameters->images);
@@ -615,6 +634,7 @@ std::unique_ptr<RenderTree> RenderOrchestrator::createRenderTree(
         tileParameters.coverMinZoomReach = terrainEnabled && !isDemSource ? RenderTerrain::sourceMinZoomReach()
                                                                           : std::nullopt;
         tileParameters.alsoCover = isDemSource ? terrainGroundToKnow : std::vector<LatLng>{};
+        tileParameters.alsoCoverFinest = isDemSource ? terrainEyeGroundToKnowFinest : std::vector<LatLng>{};
         tileParameters.leaveOutEmptyTiles = terrainEnabled && !isDemSource && RenderTerrain::leavesOutEmptyTiles();
 
         tileParameters.isUpdateSynchronous = sourceImpl->isUpdateSynchronous();
